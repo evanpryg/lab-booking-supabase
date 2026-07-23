@@ -20,8 +20,9 @@ export const confirmAction = (opts) =>
     showCancelButton: true,
     confirmButtonText: opts.confirmText || 'Ya',
     cancelButtonText: 'Batal',
-    confirmButtonColor: opts.danger ? '#dc2626' : '#2563eb',
-    cancelButtonColor: '#6b7280',
+    confirmButtonColor: opts.danger ? '#e11d48' : '#2563eb',
+    cancelButtonColor: '#64748b',
+    reverseButtons: true,
   });
 
 export const icons = () => window.lucide?.createIcons();
@@ -42,44 +43,70 @@ export const todayISO = () => {
   return `${n.getFullYear()}-${String(n.getMonth() + 1).padStart(2, '0')}-${String(n.getDate()).padStart(2, '0')}`;
 };
 
-// ---- Badge -----------------------------------------------------------------
+// ---- Badge (dengan dot) ----------------------------------------------------
 const BOOK_BADGE = {
-  menunggu:   ['Menunggu Persetujuan', 'bg-amber-100 text-amber-700'],
-  disetujui:  ['Disetujui', 'bg-emerald-100 text-emerald-700'],
-  ditolak:    ['Ditolak', 'bg-red-100 text-red-700'],
-  dibatalkan: ['Dibatalkan', 'bg-gray-200 text-gray-600'],
-  selesai:    ['Selesai', 'bg-blue-100 text-blue-700'],
+  menunggu:   ['Menunggu', 'bg-amber-50 text-amber-700 ring-amber-600/20', 'bg-amber-500'],
+  disetujui:  ['Disetujui', 'bg-emerald-50 text-emerald-700 ring-emerald-600/20', 'bg-emerald-500'],
+  ditolak:    ['Ditolak', 'bg-rose-50 text-rose-700 ring-rose-600/20', 'bg-rose-500'],
+  dibatalkan: ['Dibatalkan', 'bg-slate-100 text-slate-500 ring-slate-500/20', 'bg-slate-400'],
+  selesai:    ['Selesai', 'bg-brand-50 text-brand-700 ring-brand-600/20', 'bg-brand-500'],
 };
 export const bookingBadge = (s) => {
-  const [label, cls] = BOOK_BADGE[s] || [s, 'bg-gray-100 text-gray-600'];
-  return `<span class="px-2.5 py-1 rounded-full text-xs font-medium ${cls}">${label}</span>`;
+  const [label, cls, dot] = BOOK_BADGE[s] || [s, 'bg-slate-100 text-slate-600 ring-slate-500/20', 'bg-slate-400'];
+  return `<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold ring-1 ring-inset ${cls}">
+    <span class="w-1.5 h-1.5 rounded-full ${dot}"></span>${label}</span>`;
 };
 
 const LAB_BADGE = {
-  tersedia:    ['Tersedia', 'bg-emerald-100 text-emerald-700'],
-  dipakai:     ['Dipakai', 'bg-blue-100 text-blue-700'],
-  maintenance: ['Maintenance', 'bg-amber-100 text-amber-700'],
-  ditutup:     ['Ditutup', 'bg-red-100 text-red-700'],
+  tersedia:    ['Tersedia', 'bg-emerald-50 text-emerald-700 ring-emerald-600/20', 'bg-emerald-500'],
+  dipakai:     ['Dipakai', 'bg-brand-50 text-brand-700 ring-brand-600/20', 'bg-brand-500'],
+  maintenance: ['Maintenance', 'bg-amber-50 text-amber-700 ring-amber-600/20', 'bg-amber-500'],
+  ditutup:     ['Ditutup', 'bg-rose-50 text-rose-700 ring-rose-600/20', 'bg-rose-500'],
 };
 export const labBadge = (s) => {
-  const [label, cls] = LAB_BADGE[s] || [s, 'bg-gray-100 text-gray-600'];
-  return `<span class="px-2.5 py-1 rounded-full text-xs font-medium ${cls}">${label}</span>`;
+  const [label, cls, dot] = LAB_BADGE[s] || [s, 'bg-slate-100 text-slate-600 ring-slate-500/20', 'bg-slate-400'];
+  return `<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold ring-1 ring-inset ${cls}">
+    <span class="w-1.5 h-1.5 rounded-full ${dot}"></span>${label}</span>`;
 };
 
+// ---- Loading & empty -------------------------------------------------------
 export const spinner = () =>
-  `<div class="flex items-center justify-center py-20 text-gray-400">
-     <i data-lucide="loader-2" class="w-6 h-6 animate-spin"></i>
-     <span class="ml-2 text-sm">Memuat…</span>
-   </div>`;
+  `<div class="space-y-3">${Array(3).fill(`
+     <div class="bg-white rounded-2xl border border-slate-200/70 shadow-soft p-4 flex items-center gap-4">
+       <div class="skeleton w-11 h-11 rounded-xl"></div>
+       <div class="flex-1 space-y-2"><div class="skeleton h-3.5 w-1/3"></div><div class="skeleton h-3 w-2/3"></div></div>
+     </div>`).join('')}</div>`;
 
 export const emptyState = (text) =>
-  `<div class="flex flex-col items-center justify-center py-16 text-gray-400">
-     <i data-lucide="inbox" class="w-10 h-10 mb-3"></i>
-     <p class="text-sm">${text}</p>
+  `<div class="flex flex-col items-center justify-center py-20 text-slate-400">
+     <div class="w-16 h-16 rounded-2xl bg-slate-100 grid place-items-center mb-4"><i data-lucide="inbox" class="w-7 h-7"></i></div>
+     <p class="text-sm font-medium">${text}</p>
    </div>`;
 
 export const escapeHtml = (s) =>
   String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
+// ---- Komponen kartu & tile -------------------------------------------------
+export const card = (inner, cls = '') =>
+  `<div class="bg-white rounded-2xl border border-slate-200/70 shadow-card ${cls}">${inner}</div>`;
+
+const TONES = {
+  blue:    'from-brand-500 to-brand-600',
+  amber:   'from-amber-400 to-orange-500',
+  emerald: 'from-emerald-400 to-teal-500',
+  red:     'from-rose-500 to-red-500',
+  violet:  'from-violet-500 to-indigo-500',
+};
+export const statTile = (icon, label, value, tone = 'blue') =>
+  `<div class="group bg-white rounded-2xl border border-slate-200/70 shadow-card p-5 transition hover:shadow-float hover:-translate-y-0.5">
+     <div class="flex items-center justify-between">
+       <div class="w-12 h-12 rounded-2xl grid place-items-center text-white bg-gradient-to-br ${TONES[tone]} shadow-glow">
+         <i data-lucide="${icon}" class="w-[22px] h-[22px]"></i>
+       </div>
+     </div>
+     <p class="text-3xl font-bold text-slate-800 mt-4 font-display leading-none">${value}</p>
+     <p class="text-[13px] text-slate-400 mt-1.5">${label}</p>
+   </div>`;
 
 // ---- Kerangka layout (sidebar + navbar) ------------------------------------
 const NAV = {
@@ -103,74 +130,61 @@ export function shell({ role, active, title, subtitle, userName, content }) {
   const items = NAV[role]
     .map(([href, icon, label]) => {
       const on = active === href;
-      return `<a href="${href}" class="flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-medium transition
-        ${on ? 'bg-blue-600 text-white shadow-sm shadow-blue-200' : 'text-gray-600 hover:bg-blue-50 hover:text-blue-700'}">
-        <i data-lucide="${icon}" class="w-[18px] h-[18px]"></i>${label}</a>`;
+      return `<a href="${href}" class="group flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-medium transition-all
+        ${on
+          ? 'bg-gradient-to-r from-brand-600 to-brand-500 text-white shadow-glow'
+          : 'text-slate-500 hover:bg-brand-50 hover:text-brand-700'}">
+        <i data-lucide="${icon}" class="w-[18px] h-[18px] ${on ? '' : 'text-slate-400 group-hover:text-brand-600'}"></i>${label}</a>`;
     })
     .join('');
 
+  const initial = escapeHtml((userName || '?').trim().charAt(0).toUpperCase());
+
   return `
-  <div class="min-h-screen flex bg-slate-50">
+  <div class="min-h-screen flex">
     <!-- Sidebar -->
-    <aside class="hidden md:flex w-64 shrink-0 flex-col border-r border-gray-100 bg-white px-4 py-5">
-      <div class="flex items-center gap-2.5 px-2 mb-6">
-        <div class="w-9 h-9 rounded-xl bg-blue-600 grid place-items-center text-white">
+    <aside class="hidden md:flex w-[264px] shrink-0 flex-col glass border-r border-slate-200/70 px-4 py-6">
+      <div class="flex items-center gap-3 px-2 mb-8">
+        <div class="w-10 h-10 rounded-2xl bg-gradient-to-br from-brand-500 to-brand-700 grid place-items-center text-white shadow-glow">
           <i data-lucide="flask-conical" class="w-5 h-5"></i>
         </div>
         <div>
-          <p class="font-semibold text-gray-800 leading-tight">Lab Sekolah</p>
-          <p class="text-[11px] text-gray-400 -mt-0.5">${role === 'admin' ? 'Panel Admin' : 'Panel Guru'}</p>
+          <p class="font-bold text-slate-800 leading-tight font-display">Lab Sekolah</p>
+          <p class="text-[11px] text-slate-400 -mt-0.5">${role === 'admin' ? 'Panel Admin' : 'Panel Guru'}</p>
         </div>
       </div>
+      <p class="text-[10px] font-semibold text-slate-300 tracking-widest px-3 mb-2">MENU</p>
       <nav class="space-y-1">${items}</nav>
-      <button id="btn-logout" class="mt-auto flex items-center gap-3 px-4 py-2.5 rounded-xl text-sm font-medium text-red-600 hover:bg-red-50">
+      <button id="btn-logout" class="mt-auto flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-medium text-rose-600 hover:bg-rose-50 transition">
         <i data-lucide="log-out" class="w-[18px] h-[18px]"></i>Keluar
       </button>
     </aside>
 
     <!-- Main -->
     <div class="flex-1 flex flex-col min-w-0">
-      <header class="h-16 border-b border-gray-100 bg-white/80 backdrop-blur flex items-center justify-between px-5 sticky top-0 z-10">
+      <header class="h-16 border-b border-slate-200/60 glass flex items-center justify-between px-5 md:px-7 sticky top-0 z-20">
         <div class="flex items-center gap-3">
-          <button id="btn-menu" class="md:hidden text-gray-500"><i data-lucide="menu" class="w-5 h-5"></i></button>
+          <button id="btn-menu" class="md:hidden text-slate-500"><i data-lucide="menu" class="w-5 h-5"></i></button>
           <div>
-            <h1 class="font-semibold text-gray-800 leading-tight">${title}</h1>
-            ${subtitle ? `<p class="text-xs text-gray-400 -mt-0.5">${subtitle}</p>` : ''}
+            <h1 class="font-bold text-slate-800 leading-tight font-display text-[17px]">${title}</h1>
+            ${subtitle ? `<p class="text-xs text-slate-400 -mt-0.5">${subtitle}</p>` : ''}
           </div>
         </div>
-        <div class="flex items-center gap-2.5">
+        <div class="flex items-center gap-3">
           <div class="text-right hidden sm:block">
-            <p class="text-sm font-medium text-gray-700 leading-tight">${escapeHtml(userName || '')}</p>
-            <p class="text-[11px] text-gray-400 -mt-0.5">${role === 'admin' ? 'Administrator' : 'Guru'}</p>
+            <p class="text-sm font-semibold text-slate-700 leading-tight">${escapeHtml(userName || '')}</p>
+            <p class="text-[11px] text-slate-400 -mt-0.5">${role === 'admin' ? 'Administrator' : 'Guru'}</p>
           </div>
-          <div class="w-9 h-9 rounded-full bg-blue-100 text-blue-700 grid place-items-center font-semibold text-sm">
-            ${escapeHtml((userName || '?').trim().charAt(0).toUpperCase())}
-          </div>
+          <div class="w-10 h-10 rounded-full bg-gradient-to-br from-brand-500 to-brand-600 text-white grid place-items-center font-bold text-sm shadow-glow ring-2 ring-white">${initial}</div>
         </div>
       </header>
 
       <!-- Mobile nav -->
-      <nav id="mobile-nav" class="md:hidden hidden border-b border-gray-100 bg-white px-4 py-2 space-y-1">${items}</nav>
+      <nav id="mobile-nav" class="md:hidden hidden border-b border-slate-200/60 glass px-4 py-3 space-y-1">${items}</nav>
 
-      <main class="flex-1 p-5 md:p-7 max-w-6xl w-full mx-auto">${content}</main>
+      <main class="flex-1 p-5 md:p-8 max-w-6xl w-full mx-auto">
+        <div id="view" class="animate-fade-up">${content}</div>
+      </main>
     </div>
   </div>`;
 }
-
-export const card = (inner, cls = '') =>
-  `<div class="bg-white rounded-2xl border border-gray-100 shadow-sm ${cls}">${inner}</div>`;
-
-export const statTile = (icon, label, value, tone = 'blue') => {
-  const tones = {
-    blue: 'bg-blue-50 text-blue-600', amber: 'bg-amber-50 text-amber-600',
-    emerald: 'bg-emerald-50 text-emerald-600', red: 'bg-red-50 text-red-600',
-  };
-  return card(`
-    <div class="p-5 flex items-center gap-4">
-      <div class="w-11 h-11 rounded-xl grid place-items-center ${tones[tone]}"><i data-lucide="${icon}" class="w-5 h-5"></i></div>
-      <div>
-        <p class="text-2xl font-bold text-gray-800 leading-none">${value}</p>
-        <p class="text-xs text-gray-400 mt-1">${label}</p>
-      </div>
-    </div>`);
-};

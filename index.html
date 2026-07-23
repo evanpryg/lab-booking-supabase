@@ -6,15 +6,43 @@
   <title>Sistem Manajemen Laboratorium Sekolah</title>
   <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%232563eb' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='M10 2v7.31'/><path d='M14 9.3V2'/><path d='M8.5 2h7'/><path d='M14 9.3a6.5 6.5 0 1 1-4 0'/><path d='M5.58 16.5h12.85'/></svg>" />
 
-  <!-- Font -->
+  <!-- Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap" rel="stylesheet" />
 
   <!-- Tailwind (Play CDN — tanpa build step) -->
   <script src="https://cdn.tailwindcss.com"></script>
   <script>
-    tailwind.config = { theme: { extend: { fontFamily: { sans: ['Inter', 'ui-sans-serif', 'system-ui', 'sans-serif'] } } } };
+    tailwind.config = {
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'ui-sans-serif', 'system-ui', 'sans-serif'],
+            display: ['"Plus Jakarta Sans"', 'Inter', 'sans-serif'],
+          },
+          colors: {
+            brand: { 50:'#eef4ff',100:'#dbe6ff',200:'#bfd3ff',300:'#93b4ff',400:'#5f8bff',500:'#3b6bf6',600:'#2563eb',700:'#1d4fd0',800:'#1e40af',900:'#1e3a8a' },
+          },
+          boxShadow: {
+            soft: '0 1px 2px rgba(16,24,40,.04), 0 1px 3px rgba(16,24,40,.06)',
+            card: '0 6px 28px -12px rgba(16,24,40,.14), 0 2px 6px -3px rgba(16,24,40,.05)',
+            float: '0 28px 56px -20px rgba(16,24,40,.28)',
+            glow: '0 10px 28px -8px rgba(37,99,235,.5)',
+          },
+          keyframes: {
+            'fade-up': { '0%': { opacity: 0, transform: 'translateY(10px)' }, '100%': { opacity: 1, transform: 'translateY(0)' } },
+            'scale-in': { '0%': { opacity: 0, transform: 'scale(.97)' }, '100%': { opacity: 1, transform: 'scale(1)' } },
+            float: { '0%,100%': { transform: 'translateY(0)' }, '50%': { transform: 'translateY(-14px)' } },
+          },
+          animation: {
+            'fade-up': 'fade-up .45s cubic-bezier(.21,.68,.4,1) both',
+            'scale-in': 'scale-in .4s ease both',
+            'float-slow': 'float 9s ease-in-out infinite',
+          },
+        },
+      },
+    };
   </script>
 
   <!-- SweetAlert2 -->
@@ -29,17 +57,60 @@
   <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
 
   <style>
-    body { font-family: 'Inter', sans-serif; }
-    .fc .fc-button-primary { background:#2563eb; border-color:#2563eb; }
-    .fc .fc-button-primary:hover { background:#1d4ed8; border-color:#1d4ed8; }
-    .fc .fc-button-primary:not(:disabled).fc-button-active { background:#1e40af; border-color:#1e40af; }
-    .fc-daygrid-event { border-radius:6px; padding:1px 4px; font-size:11px; }
-    .swal2-popup { border-radius:1rem; }
-    ::-webkit-scrollbar { width:8px; height:8px; }
-    ::-webkit-scrollbar-thumb { background:#cbd5e1; border-radius:9999px; }
+    :root { color-scheme: light; }
+    body { font-family: 'Inter', sans-serif; background: #f5f7fb; }
+    h1,h2,h3,.font-display { font-family: 'Plus Jakarta Sans', 'Inter', sans-serif; }
+
+    /* Latar mesh gradient lembut */
+    body::before {
+      content: ''; position: fixed; inset: 0; z-index: -1; pointer-events: none;
+      background:
+        radial-gradient(48rem 48rem at 108% -8%, rgba(37,99,235,.10), transparent 60%),
+        radial-gradient(42rem 42rem at -12% 8%, rgba(99,102,241,.08), transparent 55%);
+    }
+
+    /* Skeleton loader */
+    .skeleton { position: relative; overflow: hidden; background: #e9edf4; border-radius: .75rem; }
+    .skeleton::after {
+      content: ''; position: absolute; inset: 0; transform: translateX(-100%);
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,.65), transparent);
+      animation: sk 1.5s infinite;
+    }
+    @keyframes sk { 100% { transform: translateX(100%); } }
+
+    /* Scrollbar */
+    ::-webkit-scrollbar { width: 9px; height: 9px; }
+    ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 9999px; border: 2px solid #f5f7fb; }
+    ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+
+    /* FullCalendar — tema premium */
+    .fc { --fc-border-color:#eef1f6; --fc-today-bg-color:#eff5ff; --fc-page-bg-color:#fff; font-size:13px; }
+    .fc .fc-toolbar-title { font-family:'Plus Jakarta Sans'; font-weight:700; color:#0f172a; font-size:1.15rem; }
+    .fc .fc-button-primary { background:#2563eb; border:none; border-radius:.6rem; padding:.42rem .8rem; font-weight:600; text-transform:capitalize; box-shadow:0 2px 6px -2px rgba(37,99,235,.5); }
+    .fc .fc-button-primary:hover { background:#1d4fd0; }
+    .fc .fc-button-primary:disabled { background:#93b4ff; }
+    .fc .fc-button-primary:not(:disabled).fc-button-active { background:#1e40af; }
+    .fc .fc-button-group > .fc-button { border-radius:.6rem; }
+    .fc-daygrid-event { border:none; border-radius:7px; padding:2px 7px; font-weight:500; box-shadow:0 1px 2px rgba(0,0,0,.12); }
+    .fc .fc-col-header-cell-cushion { color:#64748b; font-weight:600; padding:10px 4px; text-decoration:none; }
+    .fc .fc-daygrid-day-number { color:#94a3b8; padding:8px; }
+    .fc-theme-standard td, .fc-theme-standard th { border-color:#eef1f6; }
+
+    /* SweetAlert2 — tema premium */
+    .swal2-popup { border-radius:1.4rem !important; font-family:'Inter' !important; box-shadow:0 28px 56px -20px rgba(16,24,40,.4) !important; padding:2rem !important; }
+    .swal2-title { font-family:'Plus Jakarta Sans' !important; font-weight:700 !important; color:#0f172a !important; }
+    .swal2-html-container { color:#475569 !important; }
+    .swal2-styled { border-radius:.8rem !important; font-weight:600 !important; box-shadow:none !important; }
+    .swal2-styled.swal2-confirm { box-shadow:0 10px 24px -8px rgba(37,99,235,.55) !important; }
+    .swal2-input, .swal2-textarea, .swal2-select { border-radius:.8rem !important; border:1px solid #e2e8f0 !important; box-shadow:none !important; font-size:.9rem !important; }
+    .swal2-input:focus, .swal2-textarea:focus, .swal2-select:focus { border-color:#2563eb !important; box-shadow:0 0 0 3px rgba(37,99,235,.15) !important; }
+
+    /* Utilitas */
+    .glass { background: rgba(255,255,255,.72); backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); }
+    input, select, textarea, button { font-family: inherit; }
   </style>
 </head>
-<body class="bg-slate-50 text-gray-900">
+<body class="text-slate-900">
   <div id="app"></div>
   <script type="module" src="js/app.js"></script>
 </body>

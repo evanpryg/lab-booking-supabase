@@ -27,16 +27,16 @@ export async function dashboard(el) {
     </div>
     <div class="grid lg:grid-cols-3 gap-6">
       <div class="lg:col-span-2">
-        <h2 class="font-semibold text-gray-800 mb-3">Menunggu Persetujuan</h2>
+        <h2 class="font-semibold text-slate-800 mb-3">Menunggu Persetujuan</h2>
         <div id="pending"></div>
       </div>
       <div>
-        <h2 class="font-semibold text-gray-800 mb-3">Status Laboratorium</h2>
+        <h2 class="font-semibold text-slate-800 mb-3">Status Laboratorium</h2>
         <div class="space-y-2">
           ${(labs || []).map((l) => `
-            <div class="bg-white rounded-xl border border-gray-100 shadow-sm p-3.5 flex items-center justify-between">
-              <div><p class="text-sm font-medium text-gray-700">${U.escapeHtml(l.nama)}</p>
-              <p class="text-[11px] text-gray-400">${U.escapeHtml(l.lokasi || '')}</p></div>
+            <div class="bg-white rounded-xl border border-slate-200/70 shadow-card p-3.5 flex items-center justify-between">
+              <div><p class="text-sm font-medium text-slate-700">${U.escapeHtml(l.nama)}</p>
+              <p class="text-[11px] text-slate-400">${U.escapeHtml(l.lokasi || '')}</p></div>
               ${U.labBadge(l.status_efektif)}
             </div>`).join('')}
         </div>
@@ -55,7 +55,7 @@ export async function bookings(el, status = '') {
   el.innerHTML = `
     <div class="flex gap-2 flex-wrap mb-4">
       ${FILTERS.map(([v, l]) => `<button data-f="${v}" class="filter px-3.5 py-1.5 rounded-full text-sm font-medium transition
-        ${v === status ? 'bg-blue-600 text-white' : 'bg-white border border-gray-200 text-gray-600 hover:bg-blue-50'}">${l}</button>`).join('')}
+        ${v === status ? 'bg-brand-600 text-white' : 'bg-white border border-slate-200 text-slate-600 hover:bg-brand-50'}">${l}</button>`).join('')}
     </div>
     <div id="list"></div>`;
   el.querySelectorAll('.filter').forEach((b) => b.addEventListener('click', () => bookings(el, b.dataset.f)));
@@ -66,25 +66,25 @@ export async function bookings(el, status = '') {
 function paintAdminBookings(container, rows, refresh) {
   if (!rows.length) { container.innerHTML = U.emptyState('Tidak ada data booking'); return; }
   container.innerHTML = `<div class="space-y-3">${rows.map((b) => `
-    <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-4">
+    <div class="bg-white rounded-2xl border border-slate-200/70 shadow-card p-4">
       <div class="flex items-start gap-4">
-        <div class="w-11 h-11 rounded-xl bg-blue-50 text-blue-600 grid place-items-center shrink-0"><i data-lucide="flask-conical" class="w-5 h-5"></i></div>
+        <div class="w-11 h-11 rounded-2xl bg-gradient-to-br from-brand-500 to-brand-600 text-white shadow-glow grid place-items-center shrink-0"><i data-lucide="flask-conical" class="w-5 h-5"></i></div>
         <div class="flex-1 min-w-0">
           <div class="flex items-center gap-2 flex-wrap">
-            <p class="font-semibold text-gray-800">${U.escapeHtml(b.laboratories?.nama || '-')}</p>${U.bookingBadge(b.status)}
+            <p class="font-semibold text-slate-800">${U.escapeHtml(b.laboratories?.nama || '-')}</p>${U.bookingBadge(b.status)}
           </div>
-          <p class="text-sm text-gray-500 mt-0.5">
+          <p class="text-sm text-slate-500 mt-0.5">
             <i data-lucide="user" class="w-3.5 h-3.5 inline -mt-0.5"></i> ${U.escapeHtml(b.gurus?.nama || '-')} ·
             ${U.fmtDate(b.tanggal)} · ${U.fmtTime(b.jam_mulai)}–${U.fmtTime(b.jam_selesai)} · ${b.jumlah_peserta} peserta${b.kelas ? ' · ' + U.escapeHtml(b.kelas) : ''}
           </p>
-          ${b.keperluan ? `<p class="text-sm text-gray-400 mt-0.5">${U.escapeHtml(b.keperluan)}</p>` : ''}
-          ${b.status === 'ditolak' && b.alasan_penolakan ? `<p class="text-sm text-red-500 mt-1">Alasan: ${U.escapeHtml(b.alasan_penolakan)}</p>` : ''}
+          ${b.keperluan ? `<p class="text-sm text-slate-400 mt-0.5">${U.escapeHtml(b.keperluan)}</p>` : ''}
+          ${b.status === 'ditolak' && b.alasan_penolakan ? `<p class="text-sm text-rose-500 mt-1">Alasan: ${U.escapeHtml(b.alasan_penolakan)}</p>` : ''}
           <div class="flex gap-2 mt-3 flex-wrap">
             ${b.status === 'menunggu' ? `
               <button data-act="disetujui" data-id="${b.id}" class="text-xs font-medium px-3 py-1.5 rounded-lg bg-emerald-600 text-white hover:bg-emerald-700 flex items-center gap-1"><i data-lucide="check" class="w-3.5 h-3.5"></i>Setujui</button>
-              <button data-act="tolak" data-id="${b.id}" class="text-xs font-medium px-3 py-1.5 rounded-lg bg-red-50 text-red-600 hover:bg-red-100 flex items-center gap-1"><i data-lucide="x" class="w-3.5 h-3.5"></i>Tolak</button>` : ''}
+              <button data-act="tolak" data-id="${b.id}" class="text-xs font-medium px-3 py-1.5 rounded-lg bg-rose-50 text-rose-600 hover:bg-rose-100 flex items-center gap-1"><i data-lucide="x" class="w-3.5 h-3.5"></i>Tolak</button>` : ''}
             ${b.status === 'disetujui' ? `
-              <button data-act="selesai" data-id="${b.id}" class="text-xs font-medium px-3 py-1.5 rounded-lg bg-blue-600 text-white hover:bg-blue-700 flex items-center gap-1"><i data-lucide="flag" class="w-3.5 h-3.5"></i>Tandai Selesai</button>` : ''}
+              <button data-act="selesai" data-id="${b.id}" class="text-xs font-medium px-3 py-1.5 rounded-lg bg-brand-600 text-white hover:bg-brand-700 flex items-center gap-1"><i data-lucide="flag" class="w-3.5 h-3.5"></i>Tandai Selesai</button>` : ''}
           </div>
         </div>
       </div>
@@ -101,7 +101,7 @@ function paintAdminBookings(container, rows, refresh) {
     } else if (act === 'tolak') {
       const { value: alasan, isConfirmed } = await Swal.fire({
         title: 'Tolak booking', input: 'textarea', inputPlaceholder: 'Alasan penolakan (opsional)',
-        showCancelButton: true, confirmButtonText: 'Tolak', cancelButtonText: 'Batal', confirmButtonColor: '#dc2626',
+        showCancelButton: true, confirmButtonText: 'Tolak', cancelButtonText: 'Batal', confirmButtonColor: '#e11d48',
       });
       if (!isConfirmed) return;
       const { error } = await db.setBookingStatus(id, 'ditolak', alasan || null);
@@ -126,23 +126,23 @@ export async function labs(el) {
   if (error) throw error;
   el.innerHTML = `
     <div class="flex justify-end mb-4">
-      <button id="add" class="text-sm bg-blue-600 hover:bg-blue-700 text-white px-3.5 py-2 rounded-xl flex items-center gap-1.5"><i data-lucide="plus" class="w-4 h-4"></i>Tambah Lab</button>
+      <button id="add" class="text-sm bg-gradient-to-r from-brand-600 to-brand-500 shadow-glow hover:to-brand-600 text-white px-3.5 py-2 rounded-xl flex items-center gap-1.5"><i data-lucide="plus" class="w-4 h-4"></i>Tambah Lab</button>
     </div>
     <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
       ${(data || []).map((l) => `
-        <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
+        <div class="bg-white rounded-2xl border border-slate-200/70 shadow-card p-5">
           <div class="flex items-start justify-between">
-            <div class="w-11 h-11 rounded-xl bg-blue-50 text-blue-600 grid place-items-center"><i data-lucide="flask-conical" class="w-5 h-5"></i></div>
+            <div class="w-11 h-11 rounded-2xl bg-gradient-to-br from-brand-500 to-brand-600 text-white shadow-glow grid place-items-center"><i data-lucide="flask-conical" class="w-5 h-5"></i></div>
             ${U.labBadge(l.status_efektif)}
           </div>
-          <p class="font-semibold text-gray-800 mt-3">${U.escapeHtml(l.nama)}</p>
-          <p class="text-xs text-gray-400">${U.escapeHtml(l.kode || '')} · Kapasitas ${l.kapasitas} · ${U.escapeHtml(l.lokasi || '-')}</p>
-          <div class="flex items-center gap-2 mt-4 pt-3 border-t border-gray-50">
-            <select data-status="${l.id}" class="text-xs rounded-lg border border-gray-200 px-2 py-1.5 flex-1">
+          <p class="font-semibold text-slate-800 mt-3">${U.escapeHtml(l.nama)}</p>
+          <p class="text-xs text-slate-400">${U.escapeHtml(l.kode || '')} · Kapasitas ${l.kapasitas} · ${U.escapeHtml(l.lokasi || '-')}</p>
+          <div class="flex items-center gap-2 mt-4 pt-3 border-t border-slate-100">
+            <select data-status="${l.id}" class="text-xs rounded-lg border border-slate-200 px-2 py-1.5 flex-1">
               ${['tersedia', 'maintenance', 'ditutup'].map((s) => `<option value="${s}" ${l.status === s ? 'selected' : ''}>${s}</option>`).join('')}
             </select>
-            <button data-edit="${l.id}" class="text-gray-400 hover:text-blue-600 p-1.5"><i data-lucide="pencil" class="w-4 h-4"></i></button>
-            <button data-del="${l.id}" class="text-gray-400 hover:text-red-600 p-1.5"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+            <button data-edit="${l.id}" class="text-slate-400 hover:text-brand-600 p-1.5"><i data-lucide="pencil" class="w-4 h-4"></i></button>
+            <button data-del="${l.id}" class="text-slate-400 hover:text-rose-600 p-1.5"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
           </div>
         </div>`).join('')}
     </div>`;
@@ -192,22 +192,22 @@ export async function equipment(el) {
   if (error) throw error;
   el.innerHTML = `
     <div class="flex justify-end mb-4">
-      <button id="add" class="text-sm bg-blue-600 hover:bg-blue-700 text-white px-3.5 py-2 rounded-xl flex items-center gap-1.5"><i data-lucide="plus" class="w-4 h-4"></i>Tambah Alat</button>
+      <button id="add" class="text-sm bg-gradient-to-r from-brand-600 to-brand-500 shadow-glow hover:to-brand-600 text-white px-3.5 py-2 rounded-xl flex items-center gap-1.5"><i data-lucide="plus" class="w-4 h-4"></i>Tambah Alat</button>
     </div>
     ${!eq?.length ? U.emptyState('Belum ada alat') : U.card(`
       <table class="w-full text-sm">
-        <thead class="text-left text-gray-400 border-b border-gray-100">
+        <thead class="text-left text-slate-400 border-b border-slate-200/70">
           <tr><th class="p-4 font-medium">Nama</th><th class="p-4 font-medium">Lab</th><th class="p-4 font-medium">Jumlah</th><th class="p-4 font-medium">Kondisi</th><th class="p-4"></th></tr>
         </thead>
         <tbody>${eq.map((e) => `
-          <tr class="border-b border-gray-50 last:border-0">
-            <td class="p-4 font-medium text-gray-700">${U.escapeHtml(e.nama)}</td>
-            <td class="p-4 text-gray-500">${U.escapeHtml(e.laboratories?.nama || '-')}</td>
-            <td class="p-4 text-gray-500">${e.jumlah}</td>
-            <td class="p-4 text-gray-500">${U.escapeHtml(e.kondisi)}</td>
+          <tr class="border-b border-slate-100 last:border-0">
+            <td class="p-4 font-medium text-slate-700">${U.escapeHtml(e.nama)}</td>
+            <td class="p-4 text-slate-500">${U.escapeHtml(e.laboratories?.nama || '-')}</td>
+            <td class="p-4 text-slate-500">${e.jumlah}</td>
+            <td class="p-4 text-slate-500">${U.escapeHtml(e.kondisi)}</td>
             <td class="p-4 text-right whitespace-nowrap">
-              <button data-edit="${e.id}" class="text-gray-400 hover:text-blue-600 p-1.5"><i data-lucide="pencil" class="w-4 h-4"></i></button>
-              <button data-del="${e.id}" class="text-gray-400 hover:text-red-600 p-1.5"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+              <button data-edit="${e.id}" class="text-slate-400 hover:text-brand-600 p-1.5"><i data-lucide="pencil" class="w-4 h-4"></i></button>
+              <button data-del="${e.id}" class="text-slate-400 hover:text-rose-600 p-1.5"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
             </td>
           </tr>`).join('')}</tbody>
       </table>`)}`;
@@ -250,21 +250,21 @@ export async function gurus(el) {
   if (error) throw error;
   el.innerHTML = `
     <div class="flex justify-end mb-4">
-      <button id="add" class="text-sm bg-blue-600 hover:bg-blue-700 text-white px-3.5 py-2 rounded-xl flex items-center gap-1.5"><i data-lucide="plus" class="w-4 h-4"></i>Tambah Guru</button>
+      <button id="add" class="text-sm bg-gradient-to-r from-brand-600 to-brand-500 shadow-glow hover:to-brand-600 text-white px-3.5 py-2 rounded-xl flex items-center gap-1.5"><i data-lucide="plus" class="w-4 h-4"></i>Tambah Guru</button>
     </div>
     ${!data?.length ? U.emptyState('Belum ada guru') : U.card(`
       <table class="w-full text-sm">
-        <thead class="text-left text-gray-400 border-b border-gray-100">
+        <thead class="text-left text-slate-400 border-b border-slate-200/70">
           <tr><th class="p-4 font-medium">Nama</th><th class="p-4 font-medium">NIP</th><th class="p-4 font-medium">Mapel</th><th class="p-4"></th></tr>
         </thead>
         <tbody>${data.map((g) => `
-          <tr class="border-b border-gray-50 last:border-0">
-            <td class="p-4 font-medium text-gray-700">${U.escapeHtml(g.nama)}</td>
-            <td class="p-4 text-gray-500">${U.escapeHtml(g.nip || '-')}</td>
-            <td class="p-4 text-gray-500">${U.escapeHtml(g.mapel || '-')}</td>
+          <tr class="border-b border-slate-100 last:border-0">
+            <td class="p-4 font-medium text-slate-700">${U.escapeHtml(g.nama)}</td>
+            <td class="p-4 text-slate-500">${U.escapeHtml(g.nip || '-')}</td>
+            <td class="p-4 text-slate-500">${U.escapeHtml(g.mapel || '-')}</td>
             <td class="p-4 text-right whitespace-nowrap">
-              <button data-edit="${g.id}" class="text-gray-400 hover:text-blue-600 p-1.5"><i data-lucide="pencil" class="w-4 h-4"></i></button>
-              <button data-del="${g.id}" class="text-gray-400 hover:text-red-600 p-1.5"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+              <button data-edit="${g.id}" class="text-slate-400 hover:text-brand-600 p-1.5"><i data-lucide="pencil" class="w-4 h-4"></i></button>
+              <button data-del="${g.id}" class="text-slate-400 hover:text-rose-600 p-1.5"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
             </td>
           </tr>`).join('')}</tbody>
       </table>`)}`;

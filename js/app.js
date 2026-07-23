@@ -28,7 +28,7 @@ function frame(route) {
   const userName = route.role === 'admin' ? (S.admin?.user?.email || 'Admin') : (S.guru?.nama || 'Guru');
   app.innerHTML = U.shell({
     role: route.role, active: location.hash, title: route.title, subtitle: route.subtitle,
-    userName, content: `<div id="view">${U.spinner()}</div>`,
+    userName, content: U.spinner(),
   });
   U.icons();
   document.getElementById('btn-logout')?.addEventListener('click', logout);
@@ -90,62 +90,66 @@ function renderNotConfigured() {
 }
 
 // ---- Halaman: Landing (pilih peran) ----------------------------------------
+function authBackdrop(inner) {
+  return `
+    <div class="min-h-screen relative overflow-hidden grid place-items-center p-6
+                bg-gradient-to-br from-brand-50 via-white to-indigo-50">
+      <div class="absolute -top-24 -right-24 w-96 h-96 rounded-full bg-brand-200/40 blur-3xl animate-float-slow"></div>
+      <div class="absolute -bottom-32 -left-24 w-96 h-96 rounded-full bg-indigo-200/40 blur-3xl animate-float-slow" style="animation-delay:-4s"></div>
+      <div class="relative w-full max-w-md animate-scale-in">${inner}</div>
+    </div>`;
+}
+
 function renderLanding() {
   if (S.admin) { location.hash = '#/admin/dashboard'; return; }
   if (S.guru) { location.hash = '#/guru/dashboard'; return; }
-  app.innerHTML = `
-    <div class="min-h-screen grid place-items-center bg-gradient-to-b from-blue-50 to-slate-50 p-6">
-      <div class="w-full max-w-md">
-        <div class="text-center mb-8">
-          <div class="w-14 h-14 rounded-2xl bg-blue-600 grid place-items-center text-white mx-auto mb-4 shadow-lg shadow-blue-200">
-            <i data-lucide="flask-conical" class="w-7 h-7"></i>
-          </div>
-          <h1 class="text-2xl font-bold text-gray-800">Sistem Manajemen Laboratorium</h1>
-          <p class="text-gray-500 mt-1">Silakan masuk sesuai peran Anda</p>
-        </div>
-        <div class="space-y-3">
-          <a href="#/login/guru" class="flex items-center gap-4 bg-white hover:border-blue-300 border border-gray-100 rounded-2xl p-5 shadow-sm transition group">
-            <div class="w-12 h-12 rounded-xl bg-blue-50 text-blue-600 grid place-items-center"><i data-lucide="user" class="w-6 h-6"></i></div>
-            <div class="flex-1"><p class="font-semibold text-gray-800">Masuk sebagai Guru</p><p class="text-sm text-gray-400">Cukup pilih nama, tanpa password</p></div>
-            <i data-lucide="chevron-right" class="w-5 h-5 text-gray-300 group-hover:text-blue-500"></i>
-          </a>
-          <a href="#/login/admin" class="flex items-center gap-4 bg-white hover:border-blue-300 border border-gray-100 rounded-2xl p-5 shadow-sm transition group">
-            <div class="w-12 h-12 rounded-xl bg-blue-50 text-blue-600 grid place-items-center"><i data-lucide="shield-check" class="w-6 h-6"></i></div>
-            <div class="flex-1"><p class="font-semibold text-gray-800">Masuk sebagai Admin</p><p class="text-sm text-gray-400">Login dengan email & password</p></div>
-            <i data-lucide="chevron-right" class="w-5 h-5 text-gray-300 group-hover:text-blue-500"></i>
-          </a>
-        </div>
+  app.innerHTML = authBackdrop(`
+    <div class="text-center mb-9">
+      <div class="w-16 h-16 rounded-3xl bg-gradient-to-br from-brand-500 to-brand-700 grid place-items-center text-white mx-auto mb-5 shadow-glow">
+        <i data-lucide="flask-conical" class="w-8 h-8"></i>
       </div>
-    </div>`;
+      <h1 class="text-[26px] font-bold text-slate-800 font-display tracking-tight">Manajemen Laboratorium</h1>
+      <p class="text-slate-500 mt-1.5">Silakan masuk sesuai peran Anda</p>
+    </div>
+    <div class="space-y-3.5">
+      <a href="#/login/guru" class="flex items-center gap-4 bg-white/80 glass hover:bg-white border border-slate-200/70 rounded-2xl p-5 shadow-card hover:shadow-float hover:-translate-y-0.5 transition-all group">
+        <div class="w-12 h-12 rounded-2xl bg-gradient-to-br from-brand-500 to-brand-600 text-white grid place-items-center shadow-glow"><i data-lucide="user" class="w-6 h-6"></i></div>
+        <div class="flex-1"><p class="font-bold text-slate-800 font-display">Masuk sebagai Guru</p><p class="text-sm text-slate-400">Cukup pilih nama, tanpa password</p></div>
+        <i data-lucide="arrow-right" class="w-5 h-5 text-slate-300 group-hover:text-brand-600 group-hover:translate-x-0.5 transition"></i>
+      </a>
+      <a href="#/login/admin" class="flex items-center gap-4 bg-white/80 glass hover:bg-white border border-slate-200/70 rounded-2xl p-5 shadow-card hover:shadow-float hover:-translate-y-0.5 transition-all group">
+        <div class="w-12 h-12 rounded-2xl bg-gradient-to-br from-slate-700 to-slate-900 text-white grid place-items-center shadow-glow"><i data-lucide="shield-check" class="w-6 h-6"></i></div>
+        <div class="flex-1"><p class="font-bold text-slate-800 font-display">Masuk sebagai Admin</p><p class="text-sm text-slate-400">Login dengan email & password</p></div>
+        <i data-lucide="arrow-right" class="w-5 h-5 text-slate-300 group-hover:text-brand-600 group-hover:translate-x-0.5 transition"></i>
+      </a>
+    </div>
+    <p class="text-center text-xs text-slate-400 mt-8">Sistem Manajemen Laboratorium Sekolah</p>`);
   U.icons();
 }
 
 // ---- Halaman: Login Admin --------------------------------------------------
 function renderAdminLogin() {
-  app.innerHTML = `
-    <div class="min-h-screen grid place-items-center bg-gradient-to-b from-blue-50 to-slate-50 p-6">
-      <div class="w-full max-w-sm bg-white rounded-2xl border border-gray-100 shadow-sm p-7">
-        <a href="#/" class="text-sm text-gray-400 hover:text-blue-600 flex items-center gap-1 mb-5"><i data-lucide="arrow-left" class="w-4 h-4"></i>Kembali</a>
-        <div class="w-12 h-12 rounded-xl bg-blue-600 text-white grid place-items-center mb-4"><i data-lucide="shield-check" class="w-6 h-6"></i></div>
-        <h1 class="text-xl font-bold text-gray-800">Login Admin</h1>
-        <p class="text-sm text-gray-400 mb-5">Masuk untuk mengelola sistem</p>
-        <form id="admin-form" class="space-y-3">
-          <div>
-            <label class="text-xs font-medium text-gray-500">Email</label>
-            <input name="email" type="email" required autocomplete="username"
-              class="mt-1 w-full rounded-xl border border-gray-200 px-3.5 py-2.5 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none" placeholder="admin@sekolah.sch.id">
-          </div>
-          <div>
-            <label class="text-xs font-medium text-gray-500">Password</label>
-            <input name="password" type="password" required autocomplete="current-password"
-              class="mt-1 w-full rounded-xl border border-gray-200 px-3.5 py-2.5 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none" placeholder="••••••••">
-          </div>
-          <button type="submit" class="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-xl py-2.5 text-sm transition flex items-center justify-center gap-2">
-            <span>Masuk</span>
-          </button>
-        </form>
-      </div>
-    </div>`;
+  const inp = 'mt-1.5 w-full rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-sm outline-none transition focus:border-brand-500 focus:ring-4 focus:ring-brand-500/15';
+  app.innerHTML = authBackdrop(`
+    <div class="bg-white/90 glass rounded-3xl border border-slate-200/70 shadow-float p-8">
+      <a href="#/" class="text-sm text-slate-400 hover:text-brand-600 flex items-center gap-1 mb-6 transition"><i data-lucide="arrow-left" class="w-4 h-4"></i>Kembali</a>
+      <div class="w-14 h-14 rounded-2xl bg-gradient-to-br from-slate-700 to-slate-900 text-white grid place-items-center mb-5 shadow-glow"><i data-lucide="shield-check" class="w-7 h-7"></i></div>
+      <h1 class="text-2xl font-bold text-slate-800 font-display tracking-tight">Login Admin</h1>
+      <p class="text-sm text-slate-400 mb-6">Masuk untuk mengelola sistem</p>
+      <form id="admin-form" class="space-y-4">
+        <div>
+          <label class="text-xs font-semibold text-slate-500">Email</label>
+          <input name="email" type="email" required autocomplete="username" class="${inp}" placeholder="admin@sekolah.sch.id">
+        </div>
+        <div>
+          <label class="text-xs font-semibold text-slate-500">Password</label>
+          <input name="password" type="password" required autocomplete="current-password" class="${inp}" placeholder="••••••••">
+        </div>
+        <button type="submit" class="w-full bg-gradient-to-r from-brand-600 to-brand-500 hover:to-brand-600 text-white font-semibold rounded-xl py-3 text-sm transition shadow-glow flex items-center justify-center gap-2">
+          <span>Masuk</span><i data-lucide="arrow-right" class="w-4 h-4"></i>
+        </button>
+      </form>
+    </div>`);
   U.icons();
   document.getElementById('admin-form').addEventListener('submit', async (e) => {
     e.preventDefault();
@@ -161,35 +165,33 @@ function renderAdminLogin() {
 
 // ---- Halaman: Login Guru (dropdown pencarian) ------------------------------
 async function renderGuruLogin() {
-  app.innerHTML = `
-    <div class="min-h-screen grid place-items-center bg-gradient-to-b from-blue-50 to-slate-50 p-6">
-      <div class="w-full max-w-sm bg-white rounded-2xl border border-gray-100 shadow-sm p-7">
-        <a href="#/" class="text-sm text-gray-400 hover:text-blue-600 flex items-center gap-1 mb-5"><i data-lucide="arrow-left" class="w-4 h-4"></i>Kembali</a>
-        <div class="w-12 h-12 rounded-xl bg-blue-600 text-white grid place-items-center mb-4"><i data-lucide="user" class="w-6 h-6"></i></div>
-        <h1 class="text-xl font-bold text-gray-800">Login Guru</h1>
-        <p class="text-sm text-gray-400 mb-5">Ketik lalu pilih nama Anda</p>
-        <div class="relative">
-          <i data-lucide="search" class="w-4 h-4 text-gray-400 absolute left-3 top-3"></i>
-          <input id="guru-search" type="text" placeholder="Cari nama guru…" autocomplete="off"
-            class="w-full rounded-xl border border-gray-200 pl-9 pr-3 py-2.5 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 outline-none">
-        </div>
-        <div id="guru-list" class="mt-2 max-h-72 overflow-y-auto space-y-1">${U.spinner()}</div>
+  app.innerHTML = authBackdrop(`
+    <div class="bg-white/90 glass rounded-3xl border border-slate-200/70 shadow-float p-8">
+      <a href="#/" class="text-sm text-slate-400 hover:text-brand-600 flex items-center gap-1 mb-6 transition"><i data-lucide="arrow-left" class="w-4 h-4"></i>Kembali</a>
+      <div class="w-14 h-14 rounded-2xl bg-gradient-to-br from-brand-500 to-brand-600 text-white grid place-items-center mb-5 shadow-glow"><i data-lucide="user" class="w-7 h-7"></i></div>
+      <h1 class="text-2xl font-bold text-slate-800 font-display tracking-tight">Login Guru</h1>
+      <p class="text-sm text-slate-400 mb-5">Ketik lalu pilih nama Anda</p>
+      <div class="relative">
+        <i data-lucide="search" class="w-4 h-4 text-slate-400 absolute left-3.5 top-3.5"></i>
+        <input id="guru-search" type="text" placeholder="Cari nama guru…" autocomplete="off"
+          class="w-full rounded-xl border border-slate-200 pl-10 pr-3 py-3 text-sm outline-none transition focus:border-brand-500 focus:ring-4 focus:ring-brand-500/15">
       </div>
-    </div>`;
+      <div id="guru-list" class="mt-3 max-h-72 overflow-y-auto space-y-1 pr-1">${U.spinner()}</div>
+    </div>`);
   U.icons();
 
   const { data: gurus, error } = await db.gurus();
   const listEl = document.getElementById('guru-list');
-  if (error) return listEl.innerHTML = `<p class="text-sm text-red-500 py-4 text-center">Gagal memuat: ${U.escapeHtml(error.message)}</p>`;
+  if (error) return listEl.innerHTML = `<p class="text-sm text-rose-500 py-4 text-center">Gagal memuat: ${U.escapeHtml(error.message)}</p>`;
 
   const paint = (rows) => {
     if (!rows.length) return listEl.innerHTML = U.emptyState('Nama tidak ditemukan');
     listEl.innerHTML = rows.map((g) => `
       <button data-id="${g.id}" data-nama="${U.escapeHtml(g.nama)}"
-        class="w-full text-left flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-blue-50 transition">
-        <div class="w-9 h-9 rounded-full bg-blue-100 text-blue-700 grid place-items-center font-semibold text-sm">${U.escapeHtml(g.nama.charAt(0))}</div>
-        <div><p class="text-sm font-medium text-gray-700">${U.escapeHtml(g.nama)}</p>
-        <p class="text-[11px] text-gray-400">${U.escapeHtml(g.mapel || '')}</p></div>
+        class="w-full text-left flex items-center gap-3 px-3 py-2.5 rounded-xl hover:bg-brand-50 border border-transparent hover:border-brand-100 transition">
+        <div class="w-9 h-9 rounded-full bg-gradient-to-br from-brand-500 to-brand-600 text-white grid place-items-center font-semibold text-sm shadow-soft">${U.escapeHtml(g.nama.charAt(0))}</div>
+        <div><p class="text-sm font-semibold text-slate-700">${U.escapeHtml(g.nama)}</p>
+        <p class="text-[11px] text-slate-400">${U.escapeHtml(g.mapel || '')}</p></div>
       </button>`).join('');
     listEl.querySelectorAll('button').forEach((b) => b.addEventListener('click', () => {
       setGuru({ id: b.dataset.id, nama: b.dataset.nama });
