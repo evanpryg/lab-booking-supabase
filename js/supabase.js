@@ -72,7 +72,7 @@ export const db = {
   bookings: (filter = {}) => {
     let q = supabase
       .from('bookings')
-      .select('*, laboratories(nama,kode), gurus(nama)')
+      .select('*, laboratories(nama,kode), gurus(nama), booking_equipment(jumlah, equipment(nama))')
       .order('tanggal', { ascending: false })
       .order('jam_mulai');
     if (filter.status) q = q.eq('status', filter.status);

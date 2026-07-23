@@ -69,6 +69,13 @@ export const labBadge = (s) => {
     <span class="w-1.5 h-1.5 rounded-full ${dot}"></span>${label}</span>`;
 };
 
+// Baris alat yang dipinjam (dengan jumlah)
+export const equipLine = (list) => {
+  if (!list || !list.length) return '';
+  const txt = list.map((be) => `${escapeHtml(be.equipment?.nama || 'Alat')} <span class="text-slate-400">×${be.jumlah}</span>`).join(', ');
+  return `<p class="text-xs text-slate-500 mt-1.5 flex items-center gap-1.5"><i data-lucide="wrench" class="w-3.5 h-3.5 text-brand-500"></i>${txt}</p>`;
+};
+
 // ---- Loading & empty -------------------------------------------------------
 export const spinner = () =>
   `<div class="space-y-3">${Array(3).fill(`
@@ -98,14 +105,32 @@ const TONES = {
   violet:  'from-violet-500 to-indigo-500',
 };
 export const statTile = (icon, label, value, tone = 'blue') =>
-  `<div class="group bg-white rounded-2xl border border-slate-200/70 shadow-card p-5 transition hover:shadow-float hover:-translate-y-0.5">
-     <div class="flex items-center justify-between">
+  `<div class="group relative overflow-hidden bg-white rounded-2xl border border-slate-200/70 shadow-card p-5 transition hover:shadow-float hover:-translate-y-0.5">
+     <div class="absolute -top-8 -right-8 w-24 h-24 rounded-full bg-gradient-to-br ${TONES[tone]} opacity-[0.12] blur-2xl group-hover:opacity-20 transition"></div>
+     <div class="relative">
        <div class="w-12 h-12 rounded-2xl grid place-items-center text-white bg-gradient-to-br ${TONES[tone]} shadow-glow">
          <i data-lucide="${icon}" class="w-[22px] h-[22px]"></i>
        </div>
+       <p class="text-3xl font-bold text-slate-800 mt-4 font-display leading-none">${value}</p>
+       <p class="text-[13px] text-slate-400 mt-1.5">${label}</p>
      </div>
-     <p class="text-3xl font-bold text-slate-800 mt-4 font-display leading-none">${value}</p>
-     <p class="text-[13px] text-slate-400 mt-1.5">${label}</p>
+   </div>`;
+
+// Banner sambutan bergradasi untuk header dashboard
+export const heroBanner = ({ name, subtitle, actionHtml = '' }) =>
+  `<div class="relative overflow-hidden rounded-2xl p-6 md:p-7 mb-6 text-white shadow-glow
+              bg-gradient-to-br from-brand-600 via-brand-600 to-indigo-600">
+     <div class="absolute -top-12 -right-8 w-48 h-48 rounded-full bg-white/10 blur-2xl"></div>
+     <div class="absolute -bottom-16 right-28 w-48 h-48 rounded-full bg-white/10 blur-3xl"></div>
+     <div class="absolute inset-0 opacity-[0.07]" style="background-image:radial-gradient(circle at 1px 1px, #fff 1px, transparent 0);background-size:22px 22px;"></div>
+     <div class="relative flex items-end justify-between gap-4 flex-wrap">
+       <div>
+         <p class="text-white/70 text-sm">Selamat datang,</p>
+         <h2 class="text-2xl md:text-[26px] font-bold font-display tracking-tight mt-0.5">${escapeHtml(name)}</h2>
+         ${subtitle ? `<p class="text-white/80 text-sm mt-1.5">${subtitle}</p>` : ''}
+       </div>
+       ${actionHtml}
+     </div>
    </div>`;
 
 // ---- Kerangka layout (sidebar + navbar) ------------------------------------

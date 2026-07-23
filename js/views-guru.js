@@ -16,6 +16,11 @@ export async function dashboard(el) {
   const count = (s) => rows.filter((r) => r.status === s).length;
 
   el.innerHTML = `
+    ${U.heroBanner({
+      name: S.guru.nama,
+      subtitle: 'Ajukan peminjaman laboratorium dan pantau statusnya di sini.',
+      actionHtml: `<a href="#/guru/new" class="bg-white/95 hover:bg-white text-brand-700 font-semibold text-sm px-4 py-2.5 rounded-xl flex items-center gap-2 shadow-sm transition"><i data-lucide="plus" class="w-4 h-4"></i>Buat Booking</a>`,
+    })}
     <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
       ${U.statTile('calendar-check', 'Total Booking', rows.length, 'blue')}
       ${U.statTile('clock', 'Menunggu', count('menunggu'), 'amber')}
@@ -91,7 +96,7 @@ export async function newBooking(el) {
       <!-- ============ ALAT ============ -->
       <div class="rounded-2xl border border-slate-200 p-4">
         <label class="text-sm font-semibold text-slate-700 flex items-center gap-2 mb-3"><i data-lucide="wrench" class="w-4 h-4 text-brand-600"></i>Alat yang dipinjam <span class="text-slate-300 font-normal">(opsional)</span></label>
-        <div id="equip" class="grid grid-cols-2 gap-2"><p class="col-span-2 text-sm text-slate-400">Pilih laboratorium dulu.</p></div>
+        <div id="equip" class="space-y-2"><p class="text-sm text-slate-400">Pilih laboratorium dulu.</p></div>
       </div>
 
       <div id="hint" class="hidden text-sm rounded-xl px-3.5 py-2.5"></div>
@@ -123,9 +128,26 @@ export async function newBooking(el) {
     if (!labId) { equipEl.innerHTML = `<p class="col-span-2 text-sm text-slate-400">Pilih laboratorium dulu.</p>`; U.icons(); return; }
     const { data: eq } = await db.equipmentByLab(labId);
     equipEl.innerHTML = (eq && eq.length)
-      ? eq.map((e) => `<label class="flex items-center gap-2 text-sm border border-slate-200 rounded-xl px-3 py-2 cursor-pointer hover:bg-brand-50">
-          <input type="checkbox" value="${e.id}" class="rounded text-brand-600"> ${U.escapeHtml(e.nama)} <span class="text-slate-400 text-xs">(${e.jumlah})</span></label>`).join('')
-      : `<p class="col-span-2 text-sm text-slate-400">Tidak ada alat terdaftar untuk lab ini.</p>`;
+      ? eq.map((e) => `
+        <div class="flex items-center gap-3 text-sm border border-slate-200 rounded-xl px-3 py-2">
+          <label class="flex items-center gap-2 flex-1 cursor-pointer min-w-0">
+            <input type="checkbox" data-eqid="${e.id}" class="equip-check rounded text-brand-600 shrink-0">
+            <span class="truncate">${U.escapeHtml(e.nama)}</span>
+            <span class="text-slate-400 text-xs shrink-0">tersedia ${e.jumlah}</span>
+          </label>
+          <div class="flex items-center gap-1 shrink-0">
+            <span class="text-xs text-slate-400">pinjam</span>
+            <input type="number" data-qty="${e.id}" min="1" max="${e.jumlah}" value="1" disabled
+              class="w-16 rounded-lg border border-slate-200 px-2 py-1 text-sm text-center outline-none focus:border-brand-500 disabled:bg-slate-50 disabled:text-slate-300">
+          </div>
+        </div>`).join('')
+      : `<p class="text-sm text-slate-400">Tidak ada alat terdaftar untuk lab ini.</p>`;
+    // Aktifkan input jumlah saat alat dicentang
+    equipEl.querySelectorAll('.equip-check').forEach((c) => c.addEventListener('change', () => {
+      const qty = equipEl.querySelector(`[data-qty="${c.dataset.eqid}"]`);
+      qty.disabled = !c.checked;
+      if (c.checked) qty.focus();
+    }));
   });
 
   // ---- Pencarian siswa ----
@@ -197,7 +219,10 @@ export async function newBooking(el) {
     const peserta = students.length || Number(manual.value) || 0;
     if (peserta <= 0) return U.alertError('Pilih minimal 1 siswa, atau isi jumlah peserta.');
 
-    const equipment = [...equipEl.querySelectorAll('input:checked')].map((c) => ({ equipment_id: c.value, jumlah: 1 }));
+    const equipment = [...equipEl.querySelectorAll('.equip-check:checked')].map((c) => {
+      const qty = equipEl.querySelector(`[data-qty="${c.dataset.eqid}"]`);
+      return { equipment_id: c.dataset.eqid, jumlah: Math.max(1, Number(qty?.value) || 1) };
+    });
     const btn = form.querySelector('button[type=submit]');
     btn.disabled = true; btn.innerHTML = '<i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i> Mengirim…'; U.icons();
 
@@ -253,6 +278,7 @@ function paintBookingCards(container, rows, allowCancel) {
         </div>
         <p class="text-sm text-slate-500 mt-0.5">${U.fmtDate(b.tanggal)} · ${U.fmtTime(b.jam_mulai)}–${U.fmtTime(b.jam_selesai)} · ${b.jumlah_peserta} peserta${b.kelas ? ' · ' + U.escapeHtml(b.kelas) : ''}</p>
         ${b.keperluan ? `<p class="text-sm text-slate-400 mt-0.5">${U.escapeHtml(b.keperluan)}</p>` : ''}
+        ${U.equipLine(b.booking_equipment)}
         ${b.status === 'ditolak' && b.alasan_penolakan ? `<p class="text-sm text-rose-500 mt-1">Alasan ditolak: ${U.escapeHtml(b.alasan_penolakan)}</p>` : ''}
         <div class="flex items-center gap-3 mt-2">
           <button data-siswa="${b.id}" class="text-xs font-medium text-brand-600 hover:underline flex items-center gap-1"><i data-lucide="users" class="w-3.5 h-3.5"></i>Lihat siswa</button>

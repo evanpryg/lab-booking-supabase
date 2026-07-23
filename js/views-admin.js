@@ -21,12 +21,19 @@ export async function dashboard(el) {
   const pending = rows.filter((r) => r.status === 'menunggu').slice(0, 6);
 
   el.innerHTML = `
+    ${U.heroBanner({
+      name: 'Administrator',
+      subtitle: `${count('menunggu')} booking menunggu persetujuan Anda.`,
+      actionHtml: `<a href="#/admin/bookings" class="bg-white/95 hover:bg-white text-brand-700 font-semibold text-sm px-4 py-2.5 rounded-xl flex items-center gap-2 shadow-sm transition"><i data-lucide="calendar-check" class="w-4 h-4"></i>Kelola Booking</a>`,
+    })}
     <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
       ${U.statTile('calendar-check', 'Total Booking', rows.length, 'blue')}
       ${U.statTile('clock', 'Menunggu Persetujuan', count('menunggu'), 'amber')}
       ${U.statTile('calendar-days', 'Booking Hari Ini', todayCount, 'emerald')}
       ${U.statTile('flask-conical', 'Lab Sedang Dipakai', dipakai, 'red')}
-    </div>
+    </div>`;
+  // (lanjut render bagian bawah di bawah)
+  el.innerHTML += `
     <div class="grid lg:grid-cols-3 gap-6">
       <div class="lg:col-span-2">
         <h2 class="font-semibold text-slate-800 mb-3">Menunggu Persetujuan</h2>
@@ -80,6 +87,7 @@ function paintAdminBookings(container, rows, refresh) {
             ${U.fmtDate(b.tanggal)} · ${U.fmtTime(b.jam_mulai)}–${U.fmtTime(b.jam_selesai)} · ${b.jumlah_peserta} peserta${b.kelas ? ' · ' + U.escapeHtml(b.kelas) : ''}
           </p>
           ${b.keperluan ? `<p class="text-sm text-slate-400 mt-0.5">${U.escapeHtml(b.keperluan)}</p>` : ''}
+          ${U.equipLine(b.booking_equipment)}
           ${b.status === 'ditolak' && b.alasan_penolakan ? `<p class="text-sm text-rose-500 mt-1">Alasan: ${U.escapeHtml(b.alasan_penolakan)}</p>` : ''}
           <div class="flex gap-2 mt-3 flex-wrap">
             <button data-siswa="${b.id}" class="text-xs font-medium px-3 py-1.5 rounded-lg bg-slate-100 text-slate-600 hover:bg-slate-200 flex items-center gap-1"><i data-lucide="users" class="w-3.5 h-3.5"></i>Lihat siswa</button>
@@ -200,7 +208,7 @@ export async function equipment(el) {
       <button id="add" class="text-sm bg-gradient-to-r from-brand-600 to-brand-500 shadow-glow hover:to-brand-600 text-white px-3.5 py-2 rounded-xl flex items-center gap-1.5"><i data-lucide="plus" class="w-4 h-4"></i>Tambah Alat</button>
     </div>
     ${!eq?.length ? U.emptyState('Belum ada alat') : U.card(`
-      <table class="w-full text-sm">
+      <div class="overflow-x-auto"><table class="w-full text-sm min-w-[560px]">
         <thead class="text-left text-slate-400 border-b border-slate-200/70">
           <tr><th class="p-4 font-medium">Nama</th><th class="p-4 font-medium">Lab</th><th class="p-4 font-medium">Jumlah</th><th class="p-4 font-medium">Kondisi</th><th class="p-4"></th></tr>
         </thead>
@@ -215,7 +223,7 @@ export async function equipment(el) {
               <button data-del="${e.id}" class="text-slate-400 hover:text-rose-600 p-1.5"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
             </td>
           </tr>`).join('')}</tbody>
-      </table>`)}`;
+      </table></div>`)}`;
   U.icons();
 
   el.querySelector('#add').addEventListener('click', () => equipForm(null, labs));
@@ -259,7 +267,7 @@ export async function gurus(el) {
       <button id="add" class="text-sm bg-gradient-to-r from-brand-600 to-brand-500 shadow-glow hover:to-brand-600 text-white px-3.5 py-2 rounded-xl flex items-center gap-1.5"><i data-lucide="plus" class="w-4 h-4"></i>Tambah Guru</button>
     </div>
     ${!data?.length ? U.emptyState('Belum ada guru') : U.card(`
-      <table class="w-full text-sm">
+      <div class="overflow-x-auto"><table class="w-full text-sm min-w-[480px]">
         <thead class="text-left text-slate-400 border-b border-slate-200/70">
           <tr><th class="p-4 font-medium">Nama</th><th class="p-4 font-medium">NIP</th><th class="p-4 font-medium">Mapel</th><th class="p-4"></th></tr>
         </thead>
@@ -273,7 +281,7 @@ export async function gurus(el) {
               <button data-del="${g.id}" class="text-slate-400 hover:text-rose-600 p-1.5"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
             </td>
           </tr>`).join('')}</tbody>
-      </table>`)}`;
+      </table></div>`)}`;
   U.icons();
 
   el.querySelector('#add').addEventListener('click', () => guruForm());
