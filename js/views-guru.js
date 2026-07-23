@@ -166,26 +166,43 @@ export async function newBooking(el) {
     U.icons();
   };
 
+  const addOne = (id, nama, kelasName) => {
+    if (selected.size >= 30) { U.toast('info', 'Maksimal 30 peserta'); return false; }
+    selected.set(id, { nama, kelas: kelasName });
+    return true;
+  };
+
   const runSearch = async () => {
     const q = searchEl.value.trim();
     const kelas = kelasFilter.value;
-    if (!q && !kelas) { resultsEl.classList.add('hidden'); return; }
-    const { data, error } = await db.searchStudents({ kelas, q, limit: 40 });
+    if (!q && !kelas) { resultsEl.classList.add('hidden'); resultsEl.innerHTML = ''; return; }
+    const { data, error } = await db.searchStudents({ kelas, q, limit: 100 });
     if (error) return;
     const rows = (data || []).filter((s) => !selected.has(s.id));
     resultsEl.classList.remove('hidden');
-    resultsEl.innerHTML = rows.length ? rows.map((s) => `
+    const header = (kelas && rows.length) ? `
+      <button type="button" id="add-all" class="w-full text-left px-3 py-2.5 bg-brand-50 text-brand-700 text-sm font-semibold flex items-center gap-2 sticky top-0 border-b border-brand-100">
+        <i data-lucide="user-plus" class="w-4 h-4"></i>Tambah semua siswa kelas ${U.escapeHtml(kelas)} (${rows.length})</button>` : '';
+    resultsEl.innerHTML = header + (rows.length ? rows.map((s) => `
       <button type="button" data-add="${s.id}" data-nama="${U.escapeHtml(s.nama)}" data-kelas="${U.escapeHtml(s.kelas)}"
         class="w-full text-left px-3 py-2 hover:bg-brand-50 flex items-center justify-between">
         <span class="text-sm text-slate-700">${U.escapeHtml(s.nama)}</span>
         <span class="text-xs text-slate-400">${U.escapeHtml(s.kelas)}</span>
-      </button>`).join('') : `<p class="px-3 py-3 text-sm text-slate-400">Tidak ada siswa cocok.</p>`;
+      </button>`).join('') : `<p class="px-3 py-3 text-sm text-slate-400">Semua siswa yang cocok sudah dipilih.</p>`);
+    U.icons();
+
+    // Pilih satu — dropdown TETAP terbuka & daftar diperbarui (tanpa bolak-balik kelas)
     resultsEl.querySelectorAll('[data-add]').forEach((b) => b.addEventListener('click', () => {
-      if (selected.size >= 30) return U.toast('info', 'Maksimal 30 peserta');
-      selected.set(b.dataset.add, { nama: b.dataset.nama, kelas: b.dataset.kelas });
-      searchEl.value = ''; resultsEl.classList.add('hidden');
-      renderSelected();
+      if (addOne(b.dataset.add, b.dataset.nama, b.dataset.kelas)) { renderSelected(); runSearch(); }
     }));
+    // Pilih satu kelas penuh sekaligus
+    document.getElementById('add-all')?.addEventListener('click', () => {
+      let capped = false;
+      for (const s of rows) { if (!addOne(s.id, s.nama, s.kelas)) { capped = true; break; } }
+      renderSelected();
+      if (capped) U.toast('info', 'Sebagian tidak ditambahkan (maks 30 peserta)');
+      runSearch();
+    });
   };
 
   let t;
