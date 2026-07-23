@@ -16,6 +16,7 @@ const ROUTES = {
   '#/admin/calendar':  { role: 'admin', title: 'Kalender', subtitle: 'Jadwal pemakaian laboratorium', view: Admin.calendar },
   '#/admin/labs':      { role: 'admin', title: 'Laboratorium', subtitle: 'Kelola data & status lab', view: Admin.labs },
   '#/admin/equipment': { role: 'admin', title: 'Alat / Equipment', subtitle: 'Kelola inventaris alat', view: Admin.equipment },
+  '#/admin/students':  { role: 'admin', title: 'Data Siswa', subtitle: 'Kelola & import daftar siswa', view: Admin.students },
   '#/admin/gurus':     { role: 'admin', title: 'Data Guru', subtitle: 'Kelola daftar guru', view: Admin.gurus },
   '#/guru/dashboard':  { role: 'guru', title: 'Dashboard', subtitle: 'Ringkasan booking Anda', view: Guru.dashboard },
   '#/guru/new':        { role: 'guru', title: 'Buat Booking', subtitle: 'Ajukan peminjaman laboratorium', view: Guru.newBooking },
@@ -31,7 +32,7 @@ function frame(route) {
     userName, content: U.spinner(),
   });
   U.icons();
-  document.getElementById('btn-logout')?.addEventListener('click', logout);
+  document.querySelectorAll('[data-logout]').forEach((b) => b.addEventListener('click', logout));
   document.getElementById('btn-menu')?.addEventListener('click', () =>
     document.getElementById('mobile-nav')?.classList.toggle('hidden'));
   return document.getElementById('view');

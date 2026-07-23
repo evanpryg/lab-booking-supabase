@@ -1,13 +1,13 @@
-// Render kalender FullCalendar dari data booking
+// Render kalender FullCalendar dari data booking (responsif untuk mobile)
 import { db } from './supabase.js';
 import * as U from './ui.js';
 
 const COLORS = { disetujui: '#2563eb', selesai: '#64748b' };
 
 export async function renderCalendar(el) {
-  el.innerHTML = U.card(`<div class="p-4"><div id="fc"></div></div>`);
+  el.innerHTML = U.card(`<div class="p-3 sm:p-4 overflow-x-auto"><div id="fc" class="min-w-[300px]"></div></div>`);
   const { data, error } = await db.approvedForCalendar();
-  if (error) { el.innerHTML = `<p class="text-red-500 text-sm">${U.escapeHtml(error.message)}</p>`; return; }
+  if (error) { el.innerHTML = `<p class="text-rose-500 text-sm">${U.escapeHtml(error.message)}</p>`; return; }
 
   const events = (data || []).map((b) => ({
     title: `${b.laboratories?.kode || ''} · ${b.gurus?.nama?.split(',')[0] || ''} (${b.jumlah_peserta})`,
@@ -18,12 +18,20 @@ export async function renderCalendar(el) {
     extendedProps: b,
   }));
 
+  const isMobile = window.matchMedia('(max-width: 640px)').matches;
+
   const cal = new window.FullCalendar.Calendar(document.getElementById('fc'), {
-    initialView: 'dayGridMonth',
+    initialView: isMobile ? 'listWeek' : 'dayGridMonth',
     locale: 'id',
     height: 'auto',
-    headerToolbar: { left: 'prev,next today', center: 'title', right: 'dayGridMonth,timeGridWeek,listWeek' },
+    expandRows: true,
+    dayMaxEvents: isMobile ? 2 : 3,
+    headerToolbar: isMobile
+      ? { left: 'prev,next', center: 'title', right: 'today' }
+      : { left: 'prev,next today', center: 'title', right: 'dayGridMonth,timeGridWeek,listWeek' },
+    footerToolbar: isMobile ? { center: 'dayGridMonth,listWeek' } : false,
     buttonText: { today: 'Hari ini', month: 'Bulan', week: 'Minggu', list: 'Daftar' },
+    noEventsText: 'Tidak ada jadwal',
     events,
     eventClick: (info) => {
       const b = info.event.extendedProps;
@@ -41,4 +49,12 @@ export async function renderCalendar(el) {
     },
   });
   cal.render();
+
+  // Re-render bila ukuran layar berubah lintas breakpoint (mobile ⇄ desktop)
+  let wasMobile = isMobile;
+  const onResize = () => {
+    const nowMobile = window.matchMedia('(max-width: 640px)').matches;
+    if (nowMobile !== wasMobile) { wasMobile = nowMobile; cal.destroy(); renderCalendar(el); }
+  };
+  window.addEventListener('resize', onResize, { once: true });
 }

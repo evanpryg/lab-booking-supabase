@@ -45,6 +45,29 @@ export const db = {
   updateEquipment: (id, row) => supabase.from('equipment').update(row).eq('id', id).select().single(),
   deleteEquipment: (id) => supabase.from('equipment').delete().eq('id', id),
 
+  // Students
+  studentClasses: () => supabase.from('student_classes').select('kelas'),
+  searchStudents: ({ kelas = '', q = '', limit = 40 } = {}) => {
+    let x = supabase.from('students').select('id,nama,kelas,nis').order('nama').limit(limit);
+    if (kelas) x = x.eq('kelas', kelas);
+    if (q) x = x.ilike('nama', `%${q}%`);
+    return x;
+  },
+  studentsPage: ({ page = 0, size = 20, q = '', kelas = '' } = {}) => {
+    let x = supabase.from('students').select('*', { count: 'exact' })
+      .order('kelas').order('nama').range(page * size, page * size + size - 1);
+    if (kelas) x = x.eq('kelas', kelas);
+    if (q) x = x.or(`nama.ilike.%${q}%,nis.ilike.%${q}%`);
+    return x;
+  },
+  createStudent: (row) => supabase.from('students').insert(row).select().single(),
+  updateStudent: (id, row) => supabase.from('students').update(row).eq('id', id).select().single(),
+  deleteStudent: (id) => supabase.from('students').delete().eq('id', id),
+  bulkInsertStudents: (rows) => supabase.from('students').insert(rows),
+  bulkInsertEquipment: (rows) => supabase.from('equipment').insert(rows),
+  bookingStudents: (bookingId) =>
+    supabase.from('booking_students').select('students(nama,kelas,nis)').eq('booking_id', bookingId),
+
   // Bookings
   bookings: (filter = {}) => {
     let q = supabase
@@ -69,6 +92,7 @@ export const db = {
       p_mulai: p.jam_mulai, p_selesai: p.jam_selesai, p_peserta: p.jumlah_peserta,
       p_kelas: p.kelas || null, p_keperluan: p.keperluan || null,
       p_equipment: p.equipment || [],
+      p_students: p.students || [],
     }),
   cancelBooking: (bookingId, guruId) =>
     supabase.rpc('cancel_booking', { p_booking: bookingId, p_guru: guruId }),

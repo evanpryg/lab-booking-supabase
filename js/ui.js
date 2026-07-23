@@ -116,6 +116,7 @@ const NAV = {
     ['#/admin/calendar', 'calendar-days', 'Kalender'],
     ['#/admin/labs', 'flask-conical', 'Laboratorium'],
     ['#/admin/equipment', 'wrench', 'Alat'],
+    ['#/admin/students', 'graduation-cap', 'Siswa'],
     ['#/admin/gurus', 'users', 'Guru'],
   ],
   guru: [
@@ -155,7 +156,7 @@ export function shell({ role, active, title, subtitle, userName, content }) {
       </div>
       <p class="text-[10px] font-semibold text-slate-300 tracking-widest px-3 mb-2">MENU</p>
       <nav class="space-y-1">${items}</nav>
-      <button id="btn-logout" class="mt-auto flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-medium text-rose-600 hover:bg-rose-50 transition">
+      <button data-logout class="mt-auto flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-medium text-rose-600 hover:bg-rose-50 transition">
         <i data-lucide="log-out" class="w-[18px] h-[18px]"></i>Keluar
       </button>
     </aside>
@@ -180,7 +181,12 @@ export function shell({ role, active, title, subtitle, userName, content }) {
       </header>
 
       <!-- Mobile nav -->
-      <nav id="mobile-nav" class="md:hidden hidden border-b border-slate-200/60 glass px-4 py-3 space-y-1">${items}</nav>
+      <nav id="mobile-nav" class="md:hidden hidden border-b border-slate-200/60 glass px-4 py-3 space-y-1">
+        ${items}
+        <button data-logout class="w-full flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-medium text-rose-600 hover:bg-rose-50 transition">
+          <i data-lucide="log-out" class="w-[18px] h-[18px]"></i>Keluar
+        </button>
+      </nav>
 
       <main class="flex-1 p-5 md:p-8 max-w-6xl w-full mx-auto">
         <div id="view" class="animate-fade-up">${content}</div>

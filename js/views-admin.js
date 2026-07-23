@@ -4,8 +4,10 @@
 import { db } from './supabase.js';
 import * as U from './ui.js';
 import { renderCalendar } from './calendar.js';
+import { showStudents } from './views-guru.js';
 
 const Swal = window.Swal;
+const XLSX = window.XLSX;
 const reload = (fn) => fn(document.getElementById('view'));
 
 // ---- Dashboard -------------------------------------------------------------
@@ -80,6 +82,7 @@ function paintAdminBookings(container, rows, refresh) {
           ${b.keperluan ? `<p class="text-sm text-slate-400 mt-0.5">${U.escapeHtml(b.keperluan)}</p>` : ''}
           ${b.status === 'ditolak' && b.alasan_penolakan ? `<p class="text-sm text-rose-500 mt-1">Alasan: ${U.escapeHtml(b.alasan_penolakan)}</p>` : ''}
           <div class="flex gap-2 mt-3 flex-wrap">
+            <button data-siswa="${b.id}" class="text-xs font-medium px-3 py-1.5 rounded-lg bg-slate-100 text-slate-600 hover:bg-slate-200 flex items-center gap-1"><i data-lucide="users" class="w-3.5 h-3.5"></i>Lihat siswa</button>
             ${b.status === 'menunggu' ? `
               <button data-act="disetujui" data-id="${b.id}" class="text-xs font-medium px-3 py-1.5 rounded-lg bg-emerald-600 text-white hover:bg-emerald-700 flex items-center gap-1"><i data-lucide="check" class="w-3.5 h-3.5"></i>Setujui</button>
               <button data-act="tolak" data-id="${b.id}" class="text-xs font-medium px-3 py-1.5 rounded-lg bg-rose-50 text-rose-600 hover:bg-rose-100 flex items-center gap-1"><i data-lucide="x" class="w-3.5 h-3.5"></i>Tolak</button>` : ''}
@@ -90,6 +93,7 @@ function paintAdminBookings(container, rows, refresh) {
       </div>
     </div>`).join('')}</div>`;
 
+  container.querySelectorAll('[data-siswa]').forEach((b) => b.addEventListener('click', () => showStudents(b.dataset.siswa)));
   container.querySelectorAll('[data-act]').forEach((btn) => btn.addEventListener('click', async () => {
     const { act, id } = btn.dataset;
     if (act === 'disetujui') {
@@ -191,7 +195,8 @@ export async function equipment(el) {
   const [{ data: eq, error }, { data: labs }] = await Promise.all([db.equipment(), db.labs()]);
   if (error) throw error;
   el.innerHTML = `
-    <div class="flex justify-end mb-4">
+    <div class="flex justify-end gap-2 mb-4">
+      <button id="import" class="text-sm bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 px-3.5 py-2 rounded-xl flex items-center gap-1.5"><i data-lucide="upload" class="w-4 h-4"></i>Import Excel/CSV</button>
       <button id="add" class="text-sm bg-gradient-to-r from-brand-600 to-brand-500 shadow-glow hover:to-brand-600 text-white px-3.5 py-2 rounded-xl flex items-center gap-1.5"><i data-lucide="plus" class="w-4 h-4"></i>Tambah Alat</button>
     </div>
     ${!eq?.length ? U.emptyState('Belum ada alat') : U.card(`
@@ -214,6 +219,7 @@ export async function equipment(el) {
   U.icons();
 
   el.querySelector('#add').addEventListener('click', () => equipForm(null, labs));
+  el.querySelector('#import').addEventListener('click', () => importEquipment(labs));
   el.querySelectorAll('[data-edit]').forEach((b) => b.addEventListener('click', () => equipForm(eq.find((x) => x.id === b.dataset.edit), labs)));
   el.querySelectorAll('[data-del]').forEach((b) => b.addEventListener('click', () => del('Alat', () => db.deleteEquipment(b.dataset.del), equipment)));
 }
@@ -297,6 +303,168 @@ async function guruForm(guru = null) {
   const { error } = guru ? await db.updateGuru(guru.id, value) : await db.createGuru(value);
   if (error) return U.alertError(error.message);
   U.toast('success', 'Tersimpan'); reload(gurus);
+}
+
+// ---- Data Siswa ------------------------------------------------------------
+export async function students(el) {
+  const { data: kelasRows } = await db.studentClasses();
+  const classes = (kelasRows || []).map((r) => r.kelas);
+  let page = 0, q = '', kelas = '', size = 20;
+
+  el.innerHTML = `
+    <div class="flex flex-col sm:flex-row gap-2 sm:items-center justify-between mb-4">
+      <div class="flex gap-2 flex-1">
+        <div class="relative flex-1 max-w-xs">
+          <i data-lucide="search" class="w-4 h-4 text-slate-400 absolute left-3 top-3"></i>
+          <input id="q" placeholder="Cari nama / NIS…" class="w-full rounded-xl border border-slate-200 pl-9 pr-3 py-2.5 text-sm outline-none focus:border-brand-500 focus:ring-4 focus:ring-brand-500/15">
+        </div>
+        <select id="kf" class="rounded-xl border border-slate-200 px-3 py-2.5 text-sm outline-none focus:border-brand-500 focus:ring-4 focus:ring-brand-500/15">
+          <option value="">Semua kelas</option>
+          ${classes.map((k) => `<option value="${U.escapeHtml(k)}">${U.escapeHtml(k)}</option>`).join('')}
+        </select>
+      </div>
+      <div class="flex gap-2">
+        <button id="import" class="text-sm bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 px-3.5 py-2 rounded-xl flex items-center gap-1.5"><i data-lucide="upload" class="w-4 h-4"></i>Import Excel/CSV</button>
+        <button id="add" class="text-sm bg-gradient-to-r from-brand-600 to-brand-500 shadow-glow hover:to-brand-600 text-white px-3.5 py-2 rounded-xl flex items-center gap-1.5"><i data-lucide="plus" class="w-4 h-4"></i>Tambah Siswa</button>
+      </div>
+    </div>
+    <div id="st-wrap">${U.spinner()}</div>`;
+  U.icons();
+
+  const load = async () => {
+    const wrap = document.getElementById('st-wrap');
+    const { data, count, error } = await db.studentsPage({ page, size, q, kelas });
+    if (error) { wrap.innerHTML = `<p class="text-rose-500 text-sm">${U.escapeHtml(error.message)}</p>`; return; }
+    if (!count) { wrap.innerHTML = U.emptyState('Tidak ada siswa'); return; }
+    const rowsById = Object.fromEntries((data || []).map((r) => [r.id, r]));
+    const from = page * size + 1, to = Math.min(count, page * size + size), pages = Math.ceil(count / size);
+    wrap.innerHTML = U.card(`
+      <div class="overflow-x-auto"><table class="w-full text-sm min-w-[420px]">
+        <thead class="text-left text-slate-400 border-b border-slate-200/70">
+          <tr><th class="p-4 font-medium">Nama</th><th class="p-4 font-medium">Kelas</th><th class="p-4 font-medium">NIS</th><th class="p-4"></th></tr>
+        </thead>
+        <tbody>${(data || []).map((s) => `
+          <tr class="border-b border-slate-100 last:border-0">
+            <td class="p-4 font-medium text-slate-700">${U.escapeHtml(s.nama)}</td>
+            <td class="p-4 text-slate-500">${U.escapeHtml(s.kelas)}</td>
+            <td class="p-4 text-slate-500">${U.escapeHtml(s.nis || '-')}</td>
+            <td class="p-4 text-right whitespace-nowrap">
+              <button data-edit="${s.id}" class="text-slate-400 hover:text-brand-600 p-1.5"><i data-lucide="pencil" class="w-4 h-4"></i></button>
+              <button data-del="${s.id}" class="text-slate-400 hover:text-rose-600 p-1.5"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+            </td>
+          </tr>`).join('')}</tbody>
+      </table></div>`) + `
+      <div class="flex items-center justify-between mt-4 text-sm text-slate-500">
+        <span>Menampilkan ${from}–${to} dari ${count} siswa</span>
+        <div class="flex gap-2">
+          <button id="prev" class="px-3 py-1.5 rounded-lg border border-slate-200 hover:bg-slate-50 disabled:opacity-40" ${page <= 0 ? 'disabled' : ''}>Sebelumnya</button>
+          <button id="next" class="px-3 py-1.5 rounded-lg border border-slate-200 hover:bg-slate-50 disabled:opacity-40" ${page >= pages - 1 ? 'disabled' : ''}>Berikutnya</button>
+        </div>
+      </div>`;
+    U.icons();
+    wrap.querySelector('#prev')?.addEventListener('click', () => { if (page > 0) { page--; load(); } });
+    wrap.querySelector('#next')?.addEventListener('click', () => { if (page < pages - 1) { page++; load(); } });
+    wrap.querySelectorAll('[data-edit]').forEach((b) => b.addEventListener('click', () => studentForm(rowsById[b.dataset.edit], load)));
+    wrap.querySelectorAll('[data-del]').forEach((b) => b.addEventListener('click', async () => {
+      const r = await U.confirmAction({ title: 'Hapus siswa?', danger: true, confirmText: 'Hapus', icon: 'warning' });
+      if (!r.isConfirmed) return;
+      const { error } = await db.deleteStudent(b.dataset.del);
+      if (error) return U.alertError(error.message);
+      U.toast('success', 'Siswa dihapus'); load();
+    }));
+  };
+
+  let t;
+  document.getElementById('q').addEventListener('input', (e) => { clearTimeout(t); t = setTimeout(() => { q = e.target.value.trim(); page = 0; load(); }, 250); });
+  document.getElementById('kf').addEventListener('change', (e) => { kelas = e.target.value; page = 0; load(); });
+  document.getElementById('add').addEventListener('click', () => studentForm(null, load));
+  document.getElementById('import').addEventListener('click', () => importStudents());
+  load();
+}
+
+async function studentForm(student, refresh) {
+  const { value, isConfirmed } = await Swal.fire({
+    title: student ? 'Edit Siswa' : 'Tambah Siswa',
+    html: `
+      <input id="s-nama" class="swal2-input" placeholder="Nama lengkap" value="${U.escapeHtml(student?.nama || '')}">
+      <input id="s-kelas" class="swal2-input" placeholder="Kelas (mis. XI IPA 1)" value="${U.escapeHtml(student?.kelas || '')}">
+      <input id="s-nis" class="swal2-input" placeholder="NIS (opsional)" value="${U.escapeHtml(student?.nis || '')}">`,
+    showCancelButton: true, confirmButtonText: 'Simpan', cancelButtonText: 'Batal', confirmButtonColor: '#2563eb', focusConfirm: false,
+    preConfirm: () => {
+      const nama = document.getElementById('s-nama').value.trim();
+      const kelas = document.getElementById('s-kelas').value.trim();
+      if (!nama || !kelas) { Swal.showValidationMessage('Nama & kelas wajib diisi'); return false; }
+      return { nama, kelas, nis: document.getElementById('s-nis').value.trim() || null };
+    },
+  });
+  if (!isConfirmed) return;
+  const { error } = student ? await db.updateStudent(student.id, value) : await db.createStudent(value);
+  if (error) return U.alertError(error.message);
+  U.toast('success', 'Tersimpan'); refresh ? refresh() : reload(students);
+}
+
+// ---- Import Excel/CSV ------------------------------------------------------
+function pickAndParse(onRows) {
+  const input = document.createElement('input');
+  input.type = 'file'; input.accept = '.csv,.xlsx,.xls';
+  input.onchange = async () => {
+    const file = input.files?.[0];
+    if (!file) return;
+    try {
+      const wb = XLSX.read(await file.arrayBuffer(), { type: 'array' });
+      const ws = wb.Sheets[wb.SheetNames[0]];
+      onRows(XLSX.utils.sheet_to_json(ws, { defval: '' }));
+    } catch (e) { U.alertError('Gagal membaca file: ' + e.message); }
+  };
+  input.click();
+}
+const normKeys = (o) => Object.fromEntries(Object.entries(o).map(([k, v]) => [String(k).trim().toLowerCase(), v]));
+
+async function chunkInsert(rows, fn) {
+  let ok = 0;
+  for (let i = 0; i < rows.length; i += 500) {
+    const slice = rows.slice(i, i + 500);
+    const { error } = await fn(slice);
+    if (error) throw new Error(`${error.message} (setelah ${ok} baris)`);
+    ok += slice.length;
+  }
+  return ok;
+}
+
+function importStudents() {
+  pickAndParse(async (raw) => {
+    const rows = raw.map(normKeys).map((r) => ({
+      nama: String(r.nama || r.name || '').trim(),
+      kelas: String(r.kelas || r.class || r.rombel || '').trim(),
+      nis: String(r.nis || r.nisn || '').trim() || null,
+    })).filter((r) => r.nama && r.kelas);
+    if (!rows.length) return U.alertError('Tidak ada baris valid. File wajib punya kolom "nama" dan "kelas".');
+    const c = await U.confirmAction({ title: `Import ${rows.length} siswa?`, text: 'Data ditambahkan ke daftar siswa yang ada.', confirmText: 'Import', icon: 'question' });
+    if (!c.isConfirmed) return;
+    Swal.fire({ title: 'Mengimport…', didOpen: () => Swal.showLoading(), allowOutsideClick: false });
+    try { const n = await chunkInsert(rows, db.bulkInsertStudents); Swal.close(); await U.alertOk(`${n} siswa berhasil diimport.`); reload(students); }
+    catch (e) { Swal.close(); U.alertError('Sebagian gagal: ' + e.message); reload(students); }
+  });
+}
+
+function importEquipment(labs) {
+  const byKode = {}, byNama = {};
+  labs.forEach((l) => { if (l.kode) byKode[l.kode.toLowerCase()] = l.id; byNama[l.nama.toLowerCase()] = l.id; });
+  const KOND = ['baik', 'rusak_ringan', 'rusak_berat'];
+  pickAndParse(async (raw) => {
+    const rows = raw.map(normKeys).map((r) => {
+      const key = String(r.lab_kode || r.kode || r.lab || '').trim().toLowerCase();
+      let kondisi = String(r.kondisi || 'baik').trim().toLowerCase().replace(/\s+/g, '_');
+      if (!KOND.includes(kondisi)) kondisi = 'baik';
+      return { nama: String(r.nama || '').trim(), lab_id: byKode[key] || byNama[key] || null, jumlah: Number(r.jumlah) || 1, kondisi };
+    }).filter((r) => r.nama && r.lab_id);
+    if (!rows.length) return U.alertError('Tidak ada baris valid. Wajib kolom "nama" dan "lab_kode" (kode lab yang cocok).');
+    const c = await U.confirmAction({ title: `Import ${rows.length} alat?`, confirmText: 'Import', icon: 'question' });
+    if (!c.isConfirmed) return;
+    Swal.fire({ title: 'Mengimport…', didOpen: () => Swal.showLoading(), allowOutsideClick: false });
+    try { const n = await chunkInsert(rows, db.bulkInsertEquipment); Swal.close(); await U.alertOk(`${n} alat berhasil diimport.`); reload(equipment); }
+    catch (e) { Swal.close(); U.alertError('Sebagian gagal: ' + e.message); reload(equipment); }
+  });
 }
 
 // ---- Util hapus ------------------------------------------------------------
