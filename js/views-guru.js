@@ -166,21 +166,25 @@ export async function newBooking(el) {
   // ---- Render daftar alat (dipakai kedua mode) ----
   const renderEquip = (eq, showLab, placeholder) => {
     equipEl.innerHTML = (eq && eq.length)
-      ? eq.map((e) => `
-        <div class="flex items-start gap-3 text-sm border border-slate-200 rounded-xl px-3 py-2.5">
-          <label class="flex items-start gap-2.5 flex-1 min-w-0 cursor-pointer">
-            <input type="checkbox" data-eqid="${e.id}" class="equip-check rounded text-brand-600 mt-0.5 shrink-0">
+      ? eq.map((e) => {
+        const rusak = e.kondisi === 'rusak_berat' || e.kondisi === 'hilang';
+        return `
+        <div class="flex items-start gap-3 text-sm border rounded-xl px-3 py-2.5 ${rusak ? 'border-slate-100 bg-slate-50' : 'border-slate-200'}">
+          <label class="flex items-start gap-2.5 flex-1 min-w-0 ${rusak ? 'cursor-not-allowed' : 'cursor-pointer'}">
+            <input type="checkbox" data-eqid="${e.id}" ${rusak ? 'disabled' : ''} class="equip-check rounded text-brand-600 mt-0.5 shrink-0 disabled:opacity-40">
             <span class="min-w-0">
-              <span class="block font-medium text-slate-700 break-words leading-snug">${U.escapeHtml(e.nama)}</span>
-              <span class="block text-[11px] text-slate-400 mt-0.5">${showLab && e.laboratories?.nama ? U.escapeHtml(e.laboratories.nama) + ' · ' : ''}tersedia ${e.jumlah}</span>
+              <span class="block font-medium break-words leading-snug ${rusak ? 'text-slate-400 line-through' : 'text-slate-700'}">${U.escapeHtml(e.nama)}</span>
+              <span class="block text-[11px] mt-0.5 ${rusak ? 'text-rose-500' : 'text-slate-400'}">
+                ${showLab && e.laboratories?.nama ? U.escapeHtml(e.laboratories.nama) + ' · ' : ''}${rusak ? (e.kondisi === 'hilang' ? 'Hilang — tidak bisa dipinjam' : 'Rusak berat — tidak bisa dipinjam') : `tersedia ${e.jumlah}`}
+              </span>
             </span>
           </label>
-          <div class="flex items-center gap-1.5 shrink-0">
+          <div class="flex items-center gap-1.5 shrink-0 ${rusak ? 'hidden' : ''}">
             <span class="text-[11px] text-slate-400 hidden sm:inline">pinjam</span>
             <input type="number" data-qty="${e.id}" min="1" max="${e.jumlah}" value="1" disabled
               class="w-14 sm:w-16 rounded-lg border border-slate-200 px-2 py-1.5 text-sm text-center outline-none focus:border-brand-500 disabled:bg-slate-50 disabled:text-slate-300">
           </div>
-        </div>`).join('')
+        </div>`; }).join('')
       : `<p class="text-sm text-slate-400">${placeholder || 'Tidak ada alat.'}</p>`;
     equipEl.querySelectorAll('.equip-check').forEach((c) => c.addEventListener('change', () => {
       const qty = equipEl.querySelector(`[data-qty="${c.dataset.eqid}"]`);

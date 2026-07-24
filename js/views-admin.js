@@ -295,6 +295,7 @@ export async function equipment(el) {
             <td class="p-4 text-slate-500">${e.jumlah}</td>
             <td class="p-4">${U.kondisiBadge(e.kondisi)}</td>
             <td class="p-4 text-right whitespace-nowrap">
+              <button data-hist="${e.id}" title="Riwayat kondisi" class="text-slate-400 hover:text-brand-600 p-1.5"><i data-lucide="history" class="w-4 h-4"></i></button>
               <button data-edit="${e.id}" class="text-slate-400 hover:text-brand-600 p-1.5"><i data-lucide="pencil" class="w-4 h-4"></i></button>
               <button data-del="${e.id}" class="text-slate-400 hover:text-rose-600 p-1.5"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
             </td>
@@ -304,6 +305,7 @@ export async function equipment(el) {
 
   el.querySelector('#add').addEventListener('click', () => equipForm(null, labs));
   el.querySelector('#import').addEventListener('click', () => importEquipment(labs));
+  el.querySelectorAll('[data-hist]').forEach((b) => b.addEventListener('click', () => equipHistory(eq.find((x) => x.id === b.dataset.hist))));
   el.querySelectorAll('[data-edit]').forEach((b) => b.addEventListener('click', () => equipForm(eq.find((x) => x.id === b.dataset.edit), labs)));
   el.querySelectorAll('[data-del]').forEach((b) => b.addEventListener('click', () => del('Alat', () => db.deleteEquipment(b.dataset.del), equipment)));
 }
@@ -315,7 +317,8 @@ async function equipForm(item, labs) {
       <input id="s-nama" class="swal2-input" placeholder="Nama alat" value="${U.escapeHtml(item?.nama || '')}">
       <select id="s-lab" class="swal2-select">${labs.map((l) => `<option value="${l.id}" ${item?.lab_id === l.id ? 'selected' : ''}>${U.escapeHtml(l.nama)}</option>`).join('')}</select>
       <input id="s-jml" type="number" class="swal2-input" placeholder="Jumlah" value="${item?.jumlah ?? 1}">
-      <select id="s-kondisi" class="swal2-select">${[['baik', 'Baik'], ['rusak_ringan', 'Rusak Ringan'], ['rusak_berat', 'Rusak Berat'], ['hilang', 'Hilang']].map(([k, l]) => `<option value="${k}" ${item?.kondisi === k ? 'selected' : ''}>${l}</option>`).join('')}</select>`,
+      <select id="s-kondisi" class="swal2-select">${[['baik', 'Baik'], ['rusak_ringan', 'Rusak Ringan'], ['rusak_berat', 'Rusak Berat'], ['hilang', 'Hilang']].map(([k, l]) => `<option value="${k}" ${item?.kondisi === k ? 'selected' : ''}>${l}</option>`).join('')}</select>
+      <textarea id="s-catatan" class="swal2-textarea" placeholder="Catatan (diisi bila kondisi berubah, mis. layar pecah saat praktikum)"></textarea>`,
     showCancelButton: true, confirmButtonText: 'Simpan', cancelButtonText: 'Batal', confirmButtonColor: '#2563eb',
     focusConfirm: false,
     preConfirm: () => {
@@ -325,13 +328,55 @@ async function equipForm(item, labs) {
         nama, lab_id: document.getElementById('s-lab').value,
         jumlah: Number(document.getElementById('s-jml').value) || 1,
         kondisi: document.getElementById('s-kondisi').value,
+        _catatan: document.getElementById('s-catatan').value.trim() || null,
       };
     },
   });
   if (!isConfirmed) return;
+  const catatan = value._catatan;
+  delete value._catatan;
+
   const { error } = item ? await db.updateEquipment(item.id, value) : await db.createEquipment(value);
   if (error) return U.alertError(error.message);
+
+  // Catat riwayat bila kondisi berubah (siapa peminjam terakhir ikut disimpan)
+  if (item && item.kondisi !== value.kondisi) {
+    const { data: last } = await db.lastBorrower(item.id);
+    await db.createEquipmentLog({
+      equipment_id: item.id,
+      kondisi_lama: item.kondisi,
+      kondisi_baru: value.kondisi,
+      catatan,
+      peminjam_terakhir: last?.guru || null,
+      tanggal_pinjam_terakhir: last?.tanggal || null,
+    });
+  }
   U.toast('success', 'Tersimpan'); reload(equipment);
+}
+
+// ---- Riwayat kondisi alat --------------------------------------------------
+async function equipHistory(item) {
+  const { data, error } = await db.equipmentLogs(item.id);
+  if (error) return U.alertError('Riwayat belum tersedia. Jalankan schema-v6.sql di Supabase.');
+  const rows = data || [];
+  Swal.fire({
+    title: `Riwayat: ${item.nama}`,
+    width: 620,
+    html: rows.length ? `
+      <div class="text-left max-h-80 overflow-y-auto divide-y divide-slate-100">
+        ${rows.map((r) => `
+          <div class="py-3">
+            <div class="flex items-center gap-2 flex-wrap text-sm">
+              ${U.kondisiBadge(r.kondisi_lama || '-')}<span class="text-slate-400">→</span>${U.kondisiBadge(r.kondisi_baru)}
+            </div>
+            <p class="text-xs text-slate-400 mt-1">${new Date(r.created_at).toLocaleString('id-ID', { dateStyle: 'medium', timeStyle: 'short' })}</p>
+            ${r.catatan ? `<p class="text-sm text-slate-600 mt-1">${U.escapeHtml(r.catatan)}</p>` : ''}
+            ${r.peminjam_terakhir ? `<p class="text-xs text-slate-500 mt-1"><b>Peminjam terakhir:</b> ${U.escapeHtml(r.peminjam_terakhir)}${r.tanggal_pinjam_terakhir ? ' · ' + U.fmtDate(r.tanggal_pinjam_terakhir) : ''}</p>` : ''}
+          </div>`).join('')}
+      </div>`
+      : `<p class="text-slate-400 text-sm">Belum ada perubahan kondisi yang tercatat.</p>`,
+    confirmButtonColor: '#2563eb',
+  });
 }
 
 // ---- Data Guru -------------------------------------------------------------

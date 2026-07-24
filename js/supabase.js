@@ -44,6 +44,16 @@ export const db = {
   equipmentUsage: (fromDate) =>
     supabase.from('equipment_usage').select('*').gte('tanggal', fromDate)
       .order('tanggal').order('jam_mulai'),
+  // Riwayat kondisi alat
+  equipmentLogs: (equipmentId) =>
+    supabase.from('equipment_logs').select('*').eq('equipment_id', equipmentId)
+      .order('created_at', { ascending: false }),
+  createEquipmentLog: (row) => supabase.from('equipment_logs').insert(row),
+  // Peminjam terakhir sebuah alat (dari booking disetujui/selesai)
+  lastBorrower: (equipmentId) =>
+    supabase.from('equipment_usage_all').select('guru,tanggal').eq('equipment_id', equipmentId)
+      .order('tanggal', { ascending: false }).limit(1).maybeSingle(),
+
   createEquipment: (row) => supabase.from('equipment').insert(row).select().single(),
   updateEquipment: (id, row) => supabase.from('equipment').update(row).eq('id', id).select().single(),
   deleteEquipment: (id) => supabase.from('equipment').delete().eq('id', id),

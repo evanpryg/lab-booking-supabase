@@ -241,7 +241,7 @@ export function shell({ role, active, title, subtitle, userName, content }) {
         </button>
       </nav>
 
-      <main class="flex-1 p-5 md:p-8 max-w-6xl w-full mx-auto">
+      <main class="flex-1 p-5 md:p-8 max-w-6xl w-full mx-auto ${role === 'guru' ? 'pb-28' : ''}">
         <div id="view" class="animate-fade-up">${content}</div>
       </main>
     </div>

@@ -65,8 +65,10 @@ async function renderGuruFab() {
   fab.href = `https://wa.me/${digits}?text=${msg}`;
   fab.target = '_blank';
   fab.rel = 'noopener';
-  fab.className = 'fixed bottom-6 right-6 z-40 flex items-center gap-2 bg-green-500 hover:bg-green-600 active:scale-95 text-white font-semibold pl-4 pr-5 py-3 rounded-full shadow-float transition';
-  fab.innerHTML = `<i data-lucide="message-circle" class="w-5 h-5"></i>`;
+  fab.className = 'fixed bottom-5 right-5 z-40 w-14 h-14 grid place-items-center bg-green-500 hover:bg-green-600 active:scale-95 text-white rounded-full shadow-float transition';
+  fab.title = 'Lapor kendala via WhatsApp';
+  fab.setAttribute('aria-label', 'Lapor kendala via WhatsApp');
+  fab.innerHTML = `<i data-lucide="message-circle" class="w-6 h-6"></i>`;
   document.body.appendChild(fab);
   U.icons();
 }
