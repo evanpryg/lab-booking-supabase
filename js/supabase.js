@@ -85,6 +85,10 @@ export const db = {
     return q;
   },
   deleteBooking: (id) => supabase.from('bookings').delete().eq('id', id),
+
+  // Settings (key/value)
+  getSetting: (key) => supabase.from('settings').select('value').eq('key', key).maybeSingle(),
+  setSetting: (key, value) => supabase.from('settings').upsert({ key, value }, { onConflict: 'key' }),
   bookingEquipment: (bookingId) =>
     supabase.from('booking_equipment').select('*, equipment(nama)').eq('booking_id', bookingId),
   approvedForCalendar: () =>

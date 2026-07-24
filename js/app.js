@@ -18,6 +18,7 @@ const ROUTES = {
   '#/admin/equipment': { role: 'admin', title: 'Alat / Equipment', subtitle: 'Kelola inventaris alat', view: Admin.equipment },
   '#/admin/students':  { role: 'admin', title: 'Data Siswa', subtitle: 'Kelola & import daftar siswa', view: Admin.students },
   '#/admin/gurus':     { role: 'admin', title: 'Data Guru', subtitle: 'Kelola daftar guru', view: Admin.gurus },
+  '#/admin/settings':  { role: 'admin', title: 'Pengaturan', subtitle: 'Kontak & pengaturan sistem', view: Admin.settings },
   '#/guru/dashboard':  { role: 'guru', title: 'Dashboard', subtitle: 'Ringkasan booking Anda', view: Guru.dashboard },
   '#/guru/new':        { role: 'guru', title: 'Buat Booking', subtitle: 'Ajukan peminjaman laboratorium', view: Guru.newBooking },
   '#/guru/bookings':   { role: 'guru', title: 'Booking Saya', subtitle: 'Riwayat & status pengajuan', view: Guru.myBookings },
@@ -35,6 +36,7 @@ function frame(route) {
   document.querySelectorAll('[data-logout]').forEach((b) => b.addEventListener('click', logout));
   document.getElementById('btn-menu')?.addEventListener('click', () =>
     document.getElementById('mobile-nav')?.classList.toggle('hidden'));
+  if (route.role === 'guru') renderGuruFab(); else document.getElementById('guru-fab')?.remove();
   return document.getElementById('view');
 }
 
@@ -46,9 +48,34 @@ async function logout() {
   location.hash = '#/';
 }
 
+// ---- Floating button "Lapor Kendala" (guru → WhatsApp admin) ---------------
+let waCache; // undefined=belum diambil, null=tak ada nomor, {number,nama}=ada
+async function renderGuruFab() {
+  if (!S.guru) return;
+  if (waCache === undefined) {
+    const [{ data: num }, { data: nm }] = await Promise.all([db.getSetting('wa_number'), db.getSetting('wa_nama')]);
+    waCache = num?.value ? { number: num.value, nama: nm?.value || 'Admin' } : null;
+  }
+  if (!waCache || document.getElementById('guru-fab')) return;
+  const digits = waCache.number.replace(/\D/g, '').replace(/^0/, '62');
+  const msg = encodeURIComponent(
+    `Halo ${waCache.nama}, saya ${S.guru.nama} (guru) ingin melaporkan kendala di laboratorium:\n\n- Jenis kendala: \n- Lab / lokasi: \n- Keterangan: `);
+  const fab = document.createElement('a');
+  fab.id = 'guru-fab';
+  fab.href = `https://wa.me/${digits}?text=${msg}`;
+  fab.target = '_blank';
+  fab.rel = 'noopener';
+  fab.className = 'fixed bottom-6 right-6 z-40 flex items-center gap-2 bg-green-500 hover:bg-green-600 active:scale-95 text-white font-semibold pl-4 pr-5 py-3 rounded-full shadow-float transition';
+  fab.innerHTML = `<i data-lucide="message-circle" class="w-5 h-5"></i><span class="text-sm">Lapor Kendala</span>`;
+  document.body.appendChild(fab);
+  U.icons();
+}
+
 // ---- Router ----------------------------------------------------------------
 async function render() {
   if (!isConfigured) return renderNotConfigured();
+
+  document.getElementById('guru-fab')?.remove(); // dibuat ulang oleh frame() bila halaman guru
 
   const hash = location.hash || '#/';
 

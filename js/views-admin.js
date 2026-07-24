@@ -495,6 +495,46 @@ function importEquipment(labs) {
   });
 }
 
+// ---- Pengaturan (Kontak WhatsApp) ------------------------------------------
+export async function settings(el) {
+  const [{ data: num }, { data: nm }] = await Promise.all([db.getSetting('wa_number'), db.getSetting('wa_nama')]);
+  const inp = 'mt-1.5 w-full rounded-xl border border-slate-200 px-3.5 py-2.5 text-sm outline-none transition focus:border-brand-500 focus:ring-4 focus:ring-brand-500/15';
+  el.innerHTML = U.card(`
+    <form id="cfg" class="p-6 space-y-5 max-w-lg">
+      <div class="flex items-center gap-3">
+        <div class="w-11 h-11 rounded-2xl bg-green-100 text-green-600 grid place-items-center"><i data-lucide="message-circle" class="w-5 h-5"></i></div>
+        <div>
+          <p class="font-semibold text-slate-800">Contact Person (WhatsApp)</p>
+          <p class="text-xs text-slate-400">Dipakai tombol "Lapor Kendala" yang melayang di halaman guru.</p>
+        </div>
+      </div>
+      <div>
+        <label class="text-xs font-semibold text-slate-500">Nama Contact Person</label>
+        <input name="nama" class="${inp}" placeholder="mis. Pak Andi (Laboran)" value="${U.escapeHtml(nm?.value || '')}">
+      </div>
+      <div>
+        <label class="text-xs font-semibold text-slate-500">Nomor WhatsApp</label>
+        <input name="number" class="${inp}" placeholder="mis. 081234567890" value="${U.escapeHtml(num?.value || '')}">
+        <p class="text-[11px] text-slate-400 mt-1">Boleh format 08xx atau 62xx — otomatis disesuaikan. Kosongkan untuk menyembunyikan tombol lapor.</p>
+      </div>
+      <div class="flex justify-end">
+        <button type="submit" class="px-5 py-2.5 rounded-xl text-sm font-medium text-white bg-gradient-to-r from-brand-600 to-brand-500 shadow-glow hover:to-brand-600 flex items-center gap-2"><i data-lucide="save" class="w-4 h-4"></i>Simpan</button>
+      </div>
+    </form>`);
+  U.icons();
+  document.getElementById('cfg').addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const f = Object.fromEntries(new FormData(e.target));
+    const btn = e.target.querySelector('button');
+    btn.disabled = true;
+    const r1 = await db.setSetting('wa_number', f.number.trim());
+    const r2 = await db.setSetting('wa_nama', f.nama.trim());
+    btn.disabled = false;
+    if (r1.error || r2.error) return U.alertError((r1.error || r2.error).message);
+    U.alertOk('Pengaturan tersimpan.');
+  });
+}
+
 // ---- Util hapus ------------------------------------------------------------
 async function del(label, fn, view) {
   const r = await U.confirmAction({ title: `Hapus ${label}?`, text: 'Tindakan ini tidak bisa dibatalkan.', danger: true, confirmText: 'Hapus', icon: 'warning' });

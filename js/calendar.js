@@ -29,7 +29,7 @@ export async function renderCalendar(el) {
     headerToolbar: isMobile
       ? { left: 'prev,next', center: 'title', right: 'today' }
       : { left: 'prev,next today', center: 'title', right: 'dayGridMonth,timeGridWeek,listWeek' },
-    footerToolbar: isMobile ? { center: 'dayGridMonth,listWeek' } : false,
+    footerToolbar: isMobile ? { center: 'dayGridMonth,timeGridWeek,listWeek' } : false,
     buttonText: { today: 'Hari ini', month: 'Bulan', week: 'Minggu', list: 'Daftar' },
     noEventsText: 'Tidak ada jadwal',
     events,

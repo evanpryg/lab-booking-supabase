@@ -143,6 +143,7 @@ const NAV = {
     ['#/admin/equipment', 'wrench', 'Alat'],
     ['#/admin/students', 'graduation-cap', 'Siswa'],
     ['#/admin/gurus', 'users', 'Guru'],
+    ['#/admin/settings', 'settings', 'Pengaturan'],
   ],
   guru: [
     ['#/guru/dashboard', 'layout-dashboard', 'Dashboard'],
