@@ -77,8 +77,14 @@ export const db = {
       .order('jam_mulai');
     if (filter.status) q = q.eq('status', filter.status);
     if (filter.guru_id) q = q.eq('guru_id', filter.guru_id);
+    if (filter.month) {
+      const [y, m] = filter.month.split('-').map(Number);
+      const lastDay = new Date(y, m, 0).getDate();
+      q = q.gte('tanggal', `${filter.month}-01`).lte('tanggal', `${filter.month}-${String(lastDay).padStart(2, '0')}`);
+    }
     return q;
   },
+  deleteBooking: (id) => supabase.from('bookings').delete().eq('id', id),
   bookingEquipment: (bookingId) =>
     supabase.from('booking_equipment').select('*, equipment(nama)').eq('booking_id', bookingId),
   approvedForCalendar: () =>

@@ -58,17 +58,29 @@ export async function dashboard(el) {
 // ---- Manajemen Booking -----------------------------------------------------
 const FILTERS = [['', 'Semua'], ['menunggu', 'Menunggu'], ['disetujui', 'Disetujui'], ['selesai', 'Selesai'], ['ditolak', 'Ditolak'], ['dibatalkan', 'Dibatalkan']];
 
-export async function bookings(el, status = '') {
-  const { data, error } = await db.bookings(status ? { status } : {});
+export async function bookings(el, status = '', month) {
+  if (month === undefined) month = U.todayISO().slice(0, 7); // default: bulan berjalan
+  const filter = {};
+  if (status) filter.status = status;
+  if (month) filter.month = month;
+  const { data, error } = await db.bookings(filter);
   if (error) throw error;
   el.innerHTML = `
-    <div class="flex gap-2 flex-wrap mb-4">
-      ${FILTERS.map(([v, l]) => `<button data-f="${v}" class="filter px-3.5 py-1.5 rounded-full text-sm font-medium transition
-        ${v === status ? 'bg-brand-600 text-white' : 'bg-white border border-slate-200 text-slate-600 hover:bg-brand-50'}">${l}</button>`).join('')}
+    <div class="flex flex-col sm:flex-row gap-3 sm:items-center justify-between mb-4">
+      <div class="flex gap-2 flex-wrap">
+        ${FILTERS.map(([v, l]) => `<button data-f="${v}" class="filter px-3.5 py-1.5 rounded-full text-sm font-medium transition
+          ${v === status ? 'bg-brand-600 text-white' : 'bg-white border border-slate-200 text-slate-600 hover:bg-brand-50'}">${l}</button>`).join('')}
+      </div>
+      <div class="flex items-center gap-2 shrink-0">
+        <input type="month" id="month" value="${month}" class="rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none focus:border-brand-500 focus:ring-4 focus:ring-brand-500/15">
+        <button id="allmonth" class="px-3 py-2 rounded-xl text-sm font-medium border transition ${month ? 'bg-white border-slate-200 text-slate-600 hover:bg-brand-50' : 'bg-brand-600 border-brand-600 text-white'}">Semua bulan</button>
+      </div>
     </div>
     <div id="list"></div>`;
-  el.querySelectorAll('.filter').forEach((b) => b.addEventListener('click', () => bookings(el, b.dataset.f)));
-  paintAdminBookings(document.getElementById('list'), data || [], () => bookings(el, status));
+  el.querySelectorAll('.filter').forEach((b) => b.addEventListener('click', () => bookings(el, b.dataset.f, month)));
+  el.querySelector('#month').addEventListener('change', (e) => bookings(el, status, e.target.value));
+  el.querySelector('#allmonth').addEventListener('click', () => bookings(el, status, month ? '' : U.todayISO().slice(0, 7)));
+  paintAdminBookings(document.getElementById('list'), data || [], () => bookings(el, status, month));
   U.icons();
 }
 
@@ -96,6 +108,8 @@ function paintAdminBookings(container, rows, refresh) {
               <button data-act="tolak" data-id="${b.id}" class="text-xs font-medium px-3 py-1.5 rounded-lg bg-rose-50 text-rose-600 hover:bg-rose-100 flex items-center gap-1"><i data-lucide="x" class="w-3.5 h-3.5"></i>Tolak</button>` : ''}
             ${b.status === 'disetujui' ? `
               <button data-act="selesai" data-id="${b.id}" class="text-xs font-medium px-3 py-1.5 rounded-lg bg-brand-600 text-white hover:bg-brand-700 flex items-center gap-1"><i data-lucide="flag" class="w-3.5 h-3.5"></i>Tandai Selesai</button>` : ''}
+            ${['dibatalkan', 'ditolak'].includes(b.status) ? `
+              <button data-act="hapus" data-id="${b.id}" class="text-xs font-medium px-3 py-1.5 rounded-lg bg-rose-50 text-rose-600 hover:bg-rose-100 flex items-center gap-1"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i>Hapus</button>` : ''}
           </div>
         </div>
       </div>
@@ -123,6 +137,12 @@ function paintAdminBookings(container, rows, refresh) {
       const { error } = await db.setBookingStatus(id, 'selesai');
       if (error) return U.alertError(error.message);
       U.toast('success', 'Ditandai selesai');
+    } else if (act === 'hapus') {
+      const r = await U.confirmAction({ title: 'Hapus booking ini?', text: 'Data booking akan dihapus permanen.', danger: true, confirmText: 'Hapus', icon: 'warning' });
+      if (!r.isConfirmed) return;
+      const { error } = await db.deleteBooking(id);
+      if (error) return U.alertError(error.message);
+      U.toast('success', 'Booking dihapus');
     }
     refresh();
   }));

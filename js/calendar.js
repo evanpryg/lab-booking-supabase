@@ -21,7 +21,7 @@ export async function renderCalendar(el) {
   const isMobile = window.matchMedia('(max-width: 640px)').matches;
 
   const cal = new window.FullCalendar.Calendar(document.getElementById('fc'), {
-    initialView: isMobile ? 'listWeek' : 'dayGridMonth',
+    initialView: 'dayGridMonth', // default: tampilan kalender bulan
     locale: 'id',
     height: 'auto',
     expandRows: true,
