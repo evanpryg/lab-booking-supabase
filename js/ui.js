@@ -69,6 +69,9 @@ export const labBadge = (s) => {
     <span class="w-1.5 h-1.5 rounded-full ${dot}"></span>${label}</span>`;
 };
 
+// Judul kartu booking (lab, atau "Peminjaman Alat" bila tanpa lab)
+export const bookingTitle = (b) => escapeHtml(b.laboratories?.nama || (b.tipe === 'alat' ? 'Peminjaman Alat' : '-'));
+
 // Label peserta / penanda jenis booking
 export const pesertaLabel = (b) => (b.tipe === 'alat' ? 'Pinjam alat' : `${b.jumlah_peserta} peserta`);
 export const tipeTag = (b) =>

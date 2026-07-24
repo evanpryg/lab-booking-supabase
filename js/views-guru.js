@@ -54,7 +54,7 @@ export async function newBooking(el) {
           <button type="button" data-mode="alat" class="mode-btn px-4 py-2 rounded-lg text-sm font-semibold transition">Pinjam Alat Saja</button>
         </div>
       </div>
-      <div>
+      <div id="lab-field">
         <label class="text-xs font-semibold text-slate-500">Laboratorium <span id="lab-hint" class="text-slate-300 font-normal"></span></label>
         <select name="lab_id" required class="${inp}">
           <option value="">— Pilih lab —</option>
@@ -71,7 +71,7 @@ export async function newBooking(el) {
           <input name="jam_selesai" type="time" required class="${inp}"></div>
       </div>
       <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <div><label class="text-xs font-semibold text-slate-500">Kelas / Rombel <span class="text-slate-300">(opsional)</span></label>
+        <div id="kelas-field"><label class="text-xs font-semibold text-slate-500">Kelas / Rombel <span class="text-slate-300">(opsional)</span></label>
           <input name="kelas" type="text" class="${inp}" placeholder="mis. XI IPA 1"></div>
         <div><label class="text-xs font-semibold text-slate-500">Keperluan <span class="text-rose-400">*</span></label>
           <input name="keperluan" type="text" required class="${inp}" placeholder="mis. Praktikum jaringan"></div>
@@ -131,7 +131,8 @@ export async function newBooking(el) {
 
   // ---- Mode: Pakai Lab vs Pinjam Alat Saja ----
   const siswaSection = document.getElementById('siswa-section');
-  const labHint = document.getElementById('lab-hint');
+  const labField = document.getElementById('lab-field');
+  const kelasField = document.getElementById('kelas-field');
   const alatOpsional = document.getElementById('alat-opsional');
   let mode = 'lab';
   const setMode = (m) => {
@@ -141,26 +142,36 @@ export async function newBooking(el) {
       const on = b.dataset.mode === m;
       b.className = `mode-btn px-4 py-2 rounded-lg text-sm font-semibold transition ${on ? 'bg-white text-brand-700 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`;
     });
+    labField.classList.toggle('hidden', alat);   // mode alat: tak perlu pilih lab
+    form.lab_id.required = !alat;
+    kelasField.classList.toggle('hidden', alat);  // mode alat: tak perlu kelas/rombel
     siswaSection.classList.toggle('hidden', alat);
     document.getElementById('btn-cek').classList.toggle('hidden', alat);
-    labHint.textContent = alat ? '(asal alat)' : '';
     alatOpsional.textContent = alat ? '(wajib pilih ≥1)' : '(opsional)';
     alatOpsional.className = alat ? 'text-rose-400 font-normal' : 'text-slate-300 font-normal';
   };
-  form.querySelectorAll('.mode-btn').forEach((b) => b.addEventListener('click', () => setMode(b.dataset.mode)));
+  form.querySelectorAll('.mode-btn').forEach((b) => b.addEventListener('click', async () => {
+    setMode(b.dataset.mode);
+    if (b.dataset.mode === 'alat') {
+      const { data: eq } = await db.equipment(); // semua alat dari semua lab
+      renderEquip(eq, true, 'Belum ada alat terdaftar.');
+    } else {
+      const labId = form.lab_id.value;
+      if (labId) { const { data: eq } = await db.equipmentByLab(labId); renderEquip(eq, false, 'Tidak ada alat terdaftar untuk lab ini.'); }
+      else renderEquip(null, false, 'Pilih laboratorium dulu.');
+    }
+  }));
   setMode('lab');
 
-  // ---- Alat per lab ----
-  form.lab_id.addEventListener('change', async () => {
-    const labId = form.lab_id.value;
-    if (!labId) { equipEl.innerHTML = `<p class="col-span-2 text-sm text-slate-400">Pilih laboratorium dulu.</p>`; U.icons(); return; }
-    const { data: eq } = await db.equipmentByLab(labId);
+  // ---- Render daftar alat (dipakai kedua mode) ----
+  const renderEquip = (eq, showLab, placeholder) => {
     equipEl.innerHTML = (eq && eq.length)
       ? eq.map((e) => `
         <div class="flex items-center gap-3 text-sm border border-slate-200 rounded-xl px-3 py-2">
           <label class="flex items-center gap-2 flex-1 cursor-pointer min-w-0">
             <input type="checkbox" data-eqid="${e.id}" class="equip-check rounded text-brand-600 shrink-0">
             <span class="truncate">${U.escapeHtml(e.nama)}</span>
+            ${showLab && e.laboratories?.nama ? `<span class="text-[11px] text-slate-400 shrink-0">· ${U.escapeHtml(e.laboratories.nama)}</span>` : ''}
             <span class="text-slate-400 text-xs shrink-0">tersedia ${e.jumlah}</span>
           </label>
           <div class="flex items-center gap-1 shrink-0">
@@ -169,13 +180,22 @@ export async function newBooking(el) {
               class="w-16 rounded-lg border border-slate-200 px-2 py-1 text-sm text-center outline-none focus:border-brand-500 disabled:bg-slate-50 disabled:text-slate-300">
           </div>
         </div>`).join('')
-      : `<p class="text-sm text-slate-400">Tidak ada alat terdaftar untuk lab ini.</p>`;
-    // Aktifkan input jumlah saat alat dicentang
+      : `<p class="text-sm text-slate-400">${placeholder || 'Tidak ada alat.'}</p>`;
     equipEl.querySelectorAll('.equip-check').forEach((c) => c.addEventListener('change', () => {
       const qty = equipEl.querySelector(`[data-qty="${c.dataset.eqid}"]`);
       qty.disabled = !c.checked;
       if (c.checked) qty.focus();
     }));
+    U.icons();
+  };
+
+  // Mode "pakai lab": alat mengikuti lab yang dipilih
+  form.lab_id.addEventListener('change', async () => {
+    if (mode === 'alat') return;
+    const labId = form.lab_id.value;
+    if (!labId) { renderEquip(null, false, 'Pilih laboratorium dulu.'); return; }
+    const { data: eq } = await db.equipmentByLab(labId);
+    renderEquip(eq, false, 'Tidak ada alat terdaftar untuk lab ini.');
   });
 
   // ---- Pencarian siswa ----
@@ -278,7 +298,7 @@ export async function newBooking(el) {
     btn.disabled = true; btn.innerHTML = '<i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i> Mengirim…'; U.icons();
 
     const { error } = await db.createBooking({
-      lab_id: f.lab_id, guru_id: S.guru.id, tanggal: f.tanggal,
+      lab_id: mode === 'alat' ? null : f.lab_id, guru_id: S.guru.id, tanggal: f.tanggal,
       jam_mulai: f.jam_mulai, jam_selesai: f.jam_selesai, jumlah_peserta: peserta,
       kelas: f.kelas, keperluan: f.keperluan, equipment, students, tipe: mode,
     });
@@ -324,7 +344,7 @@ function paintBookingCards(container, rows, allowCancel) {
       <div class="w-11 h-11 rounded-2xl bg-gradient-to-br from-brand-500 to-brand-600 text-white shadow-glow grid place-items-center shrink-0"><i data-lucide="flask-conical" class="w-5 h-5"></i></div>
       <div class="flex-1 min-w-0">
         <div class="flex items-center gap-2 flex-wrap">
-          <p class="font-semibold text-slate-800">${U.escapeHtml(b.laboratories?.nama || '-')}</p>
+          <p class="font-semibold text-slate-800">${U.bookingTitle(b)}</p>
           ${U.bookingBadge(b.status)}${U.tipeTag(b)}
         </div>
         <p class="text-sm text-slate-500 mt-0.5">${U.fmtDate(b.tanggal)} · ${U.fmtTime(b.jam_mulai)}–${U.fmtTime(b.jam_selesai)} · ${U.pesertaLabel(b)}${b.kelas ? ' · ' + U.escapeHtml(b.kelas) : ''}</p>
