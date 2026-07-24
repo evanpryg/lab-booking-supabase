@@ -269,7 +269,7 @@ export async function gurus(el) {
     ${!data?.length ? U.emptyState('Belum ada guru') : U.card(`
       <div class="overflow-x-auto"><table class="w-full text-sm min-w-[480px]">
         <thead class="text-left text-slate-400 border-b border-slate-200/70">
-          <tr><th class="p-4 font-medium">Nama</th><th class="p-4 font-medium">NIP</th><th class="p-4 font-medium">Mapel</th><th class="p-4"></th></tr>
+          <tr><th class="p-4 font-medium">Nama</th><th class="p-4 font-medium">Kode Guru</th><th class="p-4 font-medium">Mapel</th><th class="p-4"></th></tr>
         </thead>
         <tbody>${data.map((g) => `
           <tr class="border-b border-slate-100 last:border-0">
@@ -294,7 +294,7 @@ async function guruForm(guru = null) {
     title: guru ? 'Edit Guru' : 'Tambah Guru',
     html: `
       <input id="s-nama" class="swal2-input" placeholder="Nama lengkap" value="${U.escapeHtml(guru?.nama || '')}">
-      <input id="s-nip" class="swal2-input" placeholder="NIP" value="${U.escapeHtml(guru?.nip || '')}">
+      <input id="s-nip" class="swal2-input" placeholder="Kode Guru" value="${U.escapeHtml(guru?.nip || '')}">
       <input id="s-mapel" class="swal2-input" placeholder="Mata pelajaran" value="${U.escapeHtml(guru?.mapel || '')}">`,
     showCancelButton: true, confirmButtonText: 'Simpan', cancelButtonText: 'Batal', confirmButtonColor: '#2563eb',
     focusConfirm: false,
