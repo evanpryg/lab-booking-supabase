@@ -41,6 +41,9 @@ export const db = {
   // Equipment
   equipment: () => supabase.from('equipment').select('*, laboratories(nama)').order('nama'),
   equipmentByLab: (labId) => supabase.from('equipment').select('*').eq('lab_id', labId).order('nama'),
+  equipmentUsage: (fromDate) =>
+    supabase.from('equipment_usage').select('*').gte('tanggal', fromDate)
+      .order('tanggal').order('jam_mulai'),
   createEquipment: (row) => supabase.from('equipment').insert(row).select().single(),
   updateEquipment: (id, row) => supabase.from('equipment').update(row).eq('id', id).select().single(),
   deleteEquipment: (id) => supabase.from('equipment').delete().eq('id', id),

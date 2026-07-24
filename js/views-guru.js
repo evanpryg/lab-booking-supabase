@@ -167,17 +167,18 @@ export async function newBooking(el) {
   const renderEquip = (eq, showLab, placeholder) => {
     equipEl.innerHTML = (eq && eq.length)
       ? eq.map((e) => `
-        <div class="flex items-center gap-3 text-sm border border-slate-200 rounded-xl px-3 py-2">
-          <label class="flex items-center gap-2 flex-1 cursor-pointer min-w-0">
-            <input type="checkbox" data-eqid="${e.id}" class="equip-check rounded text-brand-600 shrink-0">
-            <span class="truncate">${U.escapeHtml(e.nama)}</span>
-            ${showLab && e.laboratories?.nama ? `<span class="text-[11px] text-slate-400 shrink-0">· ${U.escapeHtml(e.laboratories.nama)}</span>` : ''}
-            <span class="text-slate-400 text-xs shrink-0">tersedia ${e.jumlah}</span>
+        <div class="flex items-start gap-3 text-sm border border-slate-200 rounded-xl px-3 py-2.5">
+          <label class="flex items-start gap-2.5 flex-1 min-w-0 cursor-pointer">
+            <input type="checkbox" data-eqid="${e.id}" class="equip-check rounded text-brand-600 mt-0.5 shrink-0">
+            <span class="min-w-0">
+              <span class="block font-medium text-slate-700 break-words leading-snug">${U.escapeHtml(e.nama)}</span>
+              <span class="block text-[11px] text-slate-400 mt-0.5">${showLab && e.laboratories?.nama ? U.escapeHtml(e.laboratories.nama) + ' · ' : ''}tersedia ${e.jumlah}</span>
+            </span>
           </label>
-          <div class="flex items-center gap-1 shrink-0">
-            <span class="text-xs text-slate-400">pinjam</span>
+          <div class="flex items-center gap-1.5 shrink-0">
+            <span class="text-[11px] text-slate-400 hidden sm:inline">pinjam</span>
             <input type="number" data-qty="${e.id}" min="1" max="${e.jumlah}" value="1" disabled
-              class="w-16 rounded-lg border border-slate-200 px-2 py-1 text-sm text-center outline-none focus:border-brand-500 disabled:bg-slate-50 disabled:text-slate-300">
+              class="w-14 sm:w-16 rounded-lg border border-slate-200 px-2 py-1.5 text-sm text-center outline-none focus:border-brand-500 disabled:bg-slate-50 disabled:text-slate-300">
           </div>
         </div>`).join('')
       : `<p class="text-sm text-slate-400">${placeholder || 'Tidak ada alat.'}</p>`;

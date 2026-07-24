@@ -38,6 +38,10 @@ export function fmtDate(d) {
   return `${HARI[dt.getDay()]}, ${day} ${BULAN[m - 1]} ${y}`;
 }
 export const fmtTime = (t) => (t ? t.slice(0, 5) : '-');
+export const nowTime = () => {
+  const n = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Jakarta' }));
+  return `${String(n.getHours()).padStart(2, '0')}:${String(n.getMinutes()).padStart(2, '0')}`;
+};
 export const todayISO = () => {
   const n = new Date(new Date().toLocaleString('en-US', { timeZone: 'Asia/Jakarta' }));
   return `${n.getFullYear()}-${String(n.getMonth() + 1).padStart(2, '0')}-${String(n.getDate()).padStart(2, '0')}`;
@@ -65,6 +69,19 @@ const LAB_BADGE = {
 };
 export const labBadge = (s) => {
   const [label, cls, dot] = LAB_BADGE[s] || [s, 'bg-slate-100 text-slate-600 ring-slate-500/20', 'bg-slate-400'];
+  return `<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold ring-1 ring-inset ${cls}">
+    <span class="w-1.5 h-1.5 rounded-full ${dot}"></span>${label}</span>`;
+};
+
+// Badge kondisi alat
+const KOND_BADGE = {
+  baik:         ['Baik', 'bg-emerald-50 text-emerald-700 ring-emerald-600/20', 'bg-emerald-500'],
+  rusak_ringan: ['Rusak Ringan', 'bg-amber-50 text-amber-700 ring-amber-600/20', 'bg-amber-500'],
+  rusak_berat:  ['Rusak Berat', 'bg-rose-50 text-rose-700 ring-rose-600/20', 'bg-rose-500'],
+  hilang:       ['Hilang', 'bg-slate-200 text-slate-700 ring-slate-500/25', 'bg-slate-500'],
+};
+export const kondisiBadge = (k) => {
+  const [label, cls, dot] = KOND_BADGE[k] || [k, 'bg-slate-100 text-slate-600 ring-slate-500/20', 'bg-slate-400'];
   return `<span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold ring-1 ring-inset ${cls}">
     <span class="w-1.5 h-1.5 rounded-full ${dot}"></span>${label}</span>`;
 };

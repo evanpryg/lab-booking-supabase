@@ -220,12 +220,68 @@ async function labForm(lab = null) {
 
 // ---- Equipment -------------------------------------------------------------
 export async function equipment(el) {
-  const [{ data: eq, error }, { data: labs }] = await Promise.all([db.equipment(), db.labs()]);
+  const today = U.todayISO();
+  const [{ data: eq, error }, { data: labs }, usageRes] = await Promise.all([
+    db.equipment(), db.labs(), db.equipmentUsage(today),
+  ]);
   if (error) throw error;
+  const usage = usageRes?.data || []; // kosong bila view belum dibuat (schema-v5)
+  const now = U.nowTime();
+  const isAktif = (u) => u.tanggal === today && u.jam_mulai <= now && u.jam_selesai >= now;
+  const aktif = usage.filter(isAktif);
+  const terjadwal = usage.filter((u) => !isAktif(u));
+
+  const totalJenis = (eq || []).length;
+  const unitDipinjam = aktif.reduce((s, u) => s + (u.jumlah_pinjam || 0), 0);
+  const kondisiBaik = (eq || []).filter((e) => e.kondisi === 'baik').length;
+  const bermasalah = (eq || []).filter((e) => e.kondisi !== 'baik');
+
+  const usageRow = (u, badge) => `
+    <div class="flex items-start gap-3 border-b border-slate-100 last:border-0 py-3">
+      <div class="w-9 h-9 rounded-xl bg-brand-50 text-brand-600 grid place-items-center shrink-0"><i data-lucide="wrench" class="w-4 h-4"></i></div>
+      <div class="flex-1 min-w-0">
+        <p class="text-sm font-medium text-slate-700 break-words">${U.escapeHtml(u.alat)} <span class="text-slate-400">×${u.jumlah_pinjam}</span></p>
+        <p class="text-[11px] text-slate-400 mt-0.5">${U.escapeHtml(u.guru || '-')} · ${U.fmtDate(u.tanggal)} · ${U.fmtTime(u.jam_mulai)}–${U.fmtTime(u.jam_selesai)}${u.lab ? ' · ' + U.escapeHtml(u.lab) : ''}</p>
+      </div>
+      ${badge}
+    </div>`;
+
   el.innerHTML = `
-    <div class="flex justify-end gap-2 mb-4">
-      <button id="import" class="text-sm bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 px-3.5 py-2 rounded-xl flex items-center gap-1.5"><i data-lucide="upload" class="w-4 h-4"></i>Import Excel/CSV</button>
-      <button id="add" class="text-sm bg-gradient-to-r from-brand-600 to-brand-500 shadow-glow hover:to-brand-600 text-white px-3.5 py-2 rounded-xl flex items-center gap-1.5"><i data-lucide="plus" class="w-4 h-4"></i>Tambah Alat</button>
+    <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+      ${U.statTile('wrench', 'Jenis Alat', totalJenis, 'blue')}
+      ${U.statTile('arrow-up-right', 'Unit Sedang Dipinjam', unitDipinjam, 'amber')}
+      ${U.statTile('check-circle-2', 'Kondisi Baik', kondisiBaik, 'emerald')}
+      ${U.statTile('alert-triangle', 'Rusak / Hilang', bermasalah.length, 'red')}
+    </div>
+
+    <div class="grid lg:grid-cols-2 gap-6 mb-6">
+      <div>
+        <h2 class="font-semibold text-slate-800 font-display mb-2">Sedang Dipinjam</h2>
+        ${U.card(`<div class="px-4">${aktif.length ? aktif.map((u) => usageRow(u, `<span class="px-2 py-1 rounded-full text-[10px] font-semibold bg-emerald-50 text-emerald-700 shrink-0">Berlangsung</span>`)).join('')
+          : `<p class="text-sm text-slate-400 py-6 text-center">Tidak ada alat yang sedang dipinjam.</p>`}</div>`)}
+      </div>
+      <div>
+        <h2 class="font-semibold text-slate-800 font-display mb-2">Terjadwal</h2>
+        ${U.card(`<div class="px-4">${terjadwal.length ? terjadwal.slice(0, 6).map((u) => usageRow(u, `<span class="px-2 py-1 rounded-full text-[10px] font-semibold bg-slate-100 text-slate-600 shrink-0">Terjadwal</span>`)).join('')
+          : `<p class="text-sm text-slate-400 py-6 text-center">Belum ada jadwal peminjaman alat.</p>`}</div>`)}
+      </div>
+    </div>
+
+    ${bermasalah.length ? `
+      <div class="mb-6">
+        <h2 class="font-semibold text-slate-800 font-display mb-2">Perlu Perhatian (Rusak / Hilang)</h2>
+        ${U.card(`<div class="p-4 flex flex-wrap gap-2">${bermasalah.map((e) => `
+          <span class="inline-flex items-center gap-2 border border-slate-200 rounded-xl px-3 py-1.5 text-sm">
+            ${U.escapeHtml(e.nama)} ${U.kondisiBadge(e.kondisi)}
+          </span>`).join('')}</div>`)}
+      </div>` : ''}
+
+    <div class="flex items-center justify-between gap-2 mb-4">
+      <h2 class="font-semibold text-slate-800 font-display">Daftar Alat</h2>
+      <div class="flex gap-2">
+        <button id="import" class="text-sm bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 px-3.5 py-2 rounded-xl flex items-center gap-1.5"><i data-lucide="upload" class="w-4 h-4"></i><span class="hidden sm:inline">Import Excel/CSV</span></button>
+        <button id="add" class="text-sm bg-gradient-to-r from-brand-600 to-brand-500 shadow-glow hover:to-brand-600 text-white px-3.5 py-2 rounded-xl flex items-center gap-1.5"><i data-lucide="plus" class="w-4 h-4"></i>Tambah</button>
+      </div>
     </div>
     ${!eq?.length ? U.emptyState('Belum ada alat') : U.card(`
       <div class="overflow-x-auto"><table class="w-full text-sm min-w-[560px]">
@@ -237,7 +293,7 @@ export async function equipment(el) {
             <td class="p-4 font-medium text-slate-700">${U.escapeHtml(e.nama)}</td>
             <td class="p-4 text-slate-500">${U.escapeHtml(e.laboratories?.nama || '-')}</td>
             <td class="p-4 text-slate-500">${e.jumlah}</td>
-            <td class="p-4 text-slate-500">${U.escapeHtml(e.kondisi)}</td>
+            <td class="p-4">${U.kondisiBadge(e.kondisi)}</td>
             <td class="p-4 text-right whitespace-nowrap">
               <button data-edit="${e.id}" class="text-slate-400 hover:text-brand-600 p-1.5"><i data-lucide="pencil" class="w-4 h-4"></i></button>
               <button data-del="${e.id}" class="text-slate-400 hover:text-rose-600 p-1.5"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
@@ -259,7 +315,7 @@ async function equipForm(item, labs) {
       <input id="s-nama" class="swal2-input" placeholder="Nama alat" value="${U.escapeHtml(item?.nama || '')}">
       <select id="s-lab" class="swal2-select">${labs.map((l) => `<option value="${l.id}" ${item?.lab_id === l.id ? 'selected' : ''}>${U.escapeHtml(l.nama)}</option>`).join('')}</select>
       <input id="s-jml" type="number" class="swal2-input" placeholder="Jumlah" value="${item?.jumlah ?? 1}">
-      <select id="s-kondisi" class="swal2-select">${['baik', 'rusak_ringan', 'rusak_berat'].map((k) => `<option value="${k}" ${item?.kondisi === k ? 'selected' : ''}>${k}</option>`).join('')}</select>`,
+      <select id="s-kondisi" class="swal2-select">${[['baik', 'Baik'], ['rusak_ringan', 'Rusak Ringan'], ['rusak_berat', 'Rusak Berat'], ['hilang', 'Hilang']].map(([k, l]) => `<option value="${k}" ${item?.kondisi === k ? 'selected' : ''}>${l}</option>`).join('')}</select>`,
     showCancelButton: true, confirmButtonText: 'Simpan', cancelButtonText: 'Batal', confirmButtonColor: '#2563eb',
     focusConfirm: false,
     preConfirm: () => {
@@ -478,7 +534,7 @@ function importStudents() {
 function importEquipment(labs) {
   const byKode = {}, byNama = {};
   labs.forEach((l) => { if (l.kode) byKode[l.kode.toLowerCase()] = l.id; byNama[l.nama.toLowerCase()] = l.id; });
-  const KOND = ['baik', 'rusak_ringan', 'rusak_berat'];
+  const KOND = ['baik', 'rusak_ringan', 'rusak_berat', 'hilang'];
   pickAndParse(async (raw) => {
     const rows = raw.map(normKeys).map((r) => {
       const key = String(r.lab_kode || r.kode || r.lab || '').trim().toLowerCase();
