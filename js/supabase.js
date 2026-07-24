@@ -103,6 +103,7 @@ export const db = {
       p_kelas: p.kelas || null, p_keperluan: p.keperluan || null,
       p_equipment: p.equipment || [],
       p_students: p.students || [],
+      p_tipe: p.tipe || 'lab',
     }),
   cancelBooking: (bookingId, guruId) =>
     supabase.rpc('cancel_booking', { p_booking: bookingId, p_guru: guruId }),

@@ -48,7 +48,14 @@ export async function newBooking(el) {
   el.innerHTML = U.card(`
     <form id="bk" class="p-5 sm:p-6 space-y-5">
       <div>
-        <label class="text-xs font-semibold text-slate-500">Laboratorium</label>
+        <label class="text-xs font-semibold text-slate-500 mb-1.5 block">Jenis Peminjaman</label>
+        <div class="inline-flex bg-slate-100 rounded-xl p-1 gap-1">
+          <button type="button" data-mode="lab" class="mode-btn px-4 py-2 rounded-lg text-sm font-semibold transition">Pakai Lab</button>
+          <button type="button" data-mode="alat" class="mode-btn px-4 py-2 rounded-lg text-sm font-semibold transition">Pinjam Alat Saja</button>
+        </div>
+      </div>
+      <div>
+        <label class="text-xs font-semibold text-slate-500">Laboratorium <span id="lab-hint" class="text-slate-300 font-normal"></span></label>
         <select name="lab_id" required class="${inp}">
           <option value="">— Pilih lab —</option>
           ${available.map((l) => `<option value="${l.id}" data-kap="${l.kapasitas}">${U.escapeHtml(l.nama)} (kap. ${l.kapasitas})</option>`).join('')}
@@ -66,12 +73,12 @@ export async function newBooking(el) {
       <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div><label class="text-xs font-semibold text-slate-500">Kelas / Rombel <span class="text-slate-300">(opsional)</span></label>
           <input name="kelas" type="text" class="${inp}" placeholder="mis. XI IPA 1"></div>
-        <div><label class="text-xs font-semibold text-slate-500">Keperluan</label>
-          <input name="keperluan" type="text" class="${inp}" placeholder="mis. Praktikum jaringan"></div>
+        <div><label class="text-xs font-semibold text-slate-500">Keperluan <span class="text-rose-400">*</span></label>
+          <input name="keperluan" type="text" required class="${inp}" placeholder="mis. Praktikum jaringan"></div>
       </div>
 
       <!-- ============ PILIH SISWA ============ -->
-      <div class="rounded-2xl border border-slate-200 p-4">
+      <div id="siswa-section" class="rounded-2xl border border-slate-200 p-4">
         <div class="flex items-center justify-between mb-3">
           <label class="text-sm font-semibold text-slate-700 flex items-center gap-2"><i data-lucide="users" class="w-4 h-4 text-brand-600"></i>Siswa yang ikut ke lab</label>
           <span class="text-xs font-semibold px-2.5 py-1 rounded-full bg-brand-50 text-brand-700"><span id="pcount">0</span> peserta</span>
@@ -95,7 +102,7 @@ export async function newBooking(el) {
 
       <!-- ============ ALAT ============ -->
       <div class="rounded-2xl border border-slate-200 p-4">
-        <label class="text-sm font-semibold text-slate-700 flex items-center gap-2 mb-3"><i data-lucide="wrench" class="w-4 h-4 text-brand-600"></i>Alat yang dipinjam <span class="text-slate-300 font-normal">(opsional)</span></label>
+        <label class="text-sm font-semibold text-slate-700 flex items-center gap-2 mb-3"><i data-lucide="wrench" class="w-4 h-4 text-brand-600"></i>Alat yang dipinjam <span id="alat-opsional" class="text-slate-300 font-normal">(opsional)</span></label>
         <div id="equip" class="space-y-2"><p class="text-sm text-slate-400">Pilih laboratorium dulu.</p></div>
       </div>
 
@@ -121,6 +128,27 @@ export async function newBooking(el) {
 
   const noStudents = classes.length === 0;
   if (noStudents) { manual.classList.remove('hidden'); manualNote.classList.remove('hidden'); }
+
+  // ---- Mode: Pakai Lab vs Pinjam Alat Saja ----
+  const siswaSection = document.getElementById('siswa-section');
+  const labHint = document.getElementById('lab-hint');
+  const alatOpsional = document.getElementById('alat-opsional');
+  let mode = 'lab';
+  const setMode = (m) => {
+    mode = m;
+    const alat = m === 'alat';
+    form.querySelectorAll('.mode-btn').forEach((b) => {
+      const on = b.dataset.mode === m;
+      b.className = `mode-btn px-4 py-2 rounded-lg text-sm font-semibold transition ${on ? 'bg-white text-brand-700 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`;
+    });
+    siswaSection.classList.toggle('hidden', alat);
+    document.getElementById('btn-cek').classList.toggle('hidden', alat);
+    labHint.textContent = alat ? '(asal alat)' : '';
+    alatOpsional.textContent = alat ? '(wajib pilih ≥1)' : '(opsional)';
+    alatOpsional.className = alat ? 'text-rose-400 font-normal' : 'text-slate-300 font-normal';
+  };
+  form.querySelectorAll('.mode-btn').forEach((b) => b.addEventListener('click', () => setMode(b.dataset.mode)));
+  setMode('lab');
 
   // ---- Alat per lab ----
   form.lab_id.addEventListener('change', async () => {
@@ -232,21 +260,27 @@ export async function newBooking(el) {
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
     const f = Object.fromEntries(new FormData(form));
-    const students = [...selected.keys()];
-    const peserta = students.length || Number(manual.value) || 0;
-    if (peserta <= 0) return U.alertError('Pilih minimal 1 siswa, atau isi jumlah peserta.');
-
     const equipment = [...equipEl.querySelectorAll('.equip-check:checked')].map((c) => {
       const qty = equipEl.querySelector(`[data-qty="${c.dataset.eqid}"]`);
       return { equipment_id: c.dataset.eqid, jumlah: Math.max(1, Number(qty?.value) || 1) };
     });
+
+    let students = [], peserta = null;
+    if (mode === 'alat') {
+      if (!equipment.length) return U.alertError('Pilih minimal 1 alat yang dipinjam.');
+    } else {
+      students = [...selected.keys()];
+      peserta = students.length || Number(manual.value) || 0;
+      if (peserta <= 0) return U.alertError('Pilih minimal 1 siswa, atau isi jumlah peserta.');
+    }
+
     const btn = form.querySelector('button[type=submit]');
     btn.disabled = true; btn.innerHTML = '<i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i> Mengirim…'; U.icons();
 
     const { error } = await db.createBooking({
       lab_id: f.lab_id, guru_id: S.guru.id, tanggal: f.tanggal,
       jam_mulai: f.jam_mulai, jam_selesai: f.jam_selesai, jumlah_peserta: peserta,
-      kelas: f.kelas, keperluan: f.keperluan, equipment, students,
+      kelas: f.kelas, keperluan: f.keperluan, equipment, students, tipe: mode,
     });
     btn.disabled = false; btn.innerHTML = '<i data-lucide="send" class="w-4 h-4"></i> Ajukan Booking'; U.icons();
     if (error) return U.alertError(error.message.replace(/^.*?:\s/, ''));
@@ -291,14 +325,14 @@ function paintBookingCards(container, rows, allowCancel) {
       <div class="flex-1 min-w-0">
         <div class="flex items-center gap-2 flex-wrap">
           <p class="font-semibold text-slate-800">${U.escapeHtml(b.laboratories?.nama || '-')}</p>
-          ${U.bookingBadge(b.status)}
+          ${U.bookingBadge(b.status)}${U.tipeTag(b)}
         </div>
-        <p class="text-sm text-slate-500 mt-0.5">${U.fmtDate(b.tanggal)} · ${U.fmtTime(b.jam_mulai)}–${U.fmtTime(b.jam_selesai)} · ${b.jumlah_peserta} peserta${b.kelas ? ' · ' + U.escapeHtml(b.kelas) : ''}</p>
+        <p class="text-sm text-slate-500 mt-0.5">${U.fmtDate(b.tanggal)} · ${U.fmtTime(b.jam_mulai)}–${U.fmtTime(b.jam_selesai)} · ${U.pesertaLabel(b)}${b.kelas ? ' · ' + U.escapeHtml(b.kelas) : ''}</p>
         ${b.keperluan ? `<p class="text-sm text-slate-400 mt-0.5">${U.escapeHtml(b.keperluan)}</p>` : ''}
         ${U.equipLine(b.booking_equipment)}
         ${b.status === 'ditolak' && b.alasan_penolakan ? `<p class="text-sm text-rose-500 mt-1">Alasan ditolak: ${U.escapeHtml(b.alasan_penolakan)}</p>` : ''}
         <div class="flex items-center gap-3 mt-2">
-          <button data-siswa="${b.id}" class="text-xs font-medium text-brand-600 hover:underline flex items-center gap-1"><i data-lucide="users" class="w-3.5 h-3.5"></i>Lihat siswa</button>
+          ${b.tipe !== 'alat' ? `<button data-siswa="${b.id}" class="text-xs font-medium text-brand-600 hover:underline flex items-center gap-1"><i data-lucide="users" class="w-3.5 h-3.5"></i>Lihat siswa</button>` : ''}
           ${allowCancel && ['menunggu', 'disetujui'].includes(b.status)
             ? `<button data-cancel="${b.id}" class="text-xs font-medium text-rose-600 hover:underline">Batalkan</button>` : ''}
         </div>

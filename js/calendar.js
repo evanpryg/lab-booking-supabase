@@ -10,7 +10,7 @@ export async function renderCalendar(el) {
   if (error) { el.innerHTML = `<p class="text-rose-500 text-sm">${U.escapeHtml(error.message)}</p>`; return; }
 
   const events = (data || []).map((b) => ({
-    title: `${b.laboratories?.kode || ''} · ${b.gurus?.nama?.split(',')[0] || ''} (${b.jumlah_peserta})`,
+    title: `${b.laboratories?.kode || ''} · ${b.gurus?.nama?.split(',')[0] || ''} (${b.tipe === 'alat' ? 'alat' : b.jumlah_peserta})`,
     start: `${b.tanggal}T${b.jam_mulai}`,
     end: `${b.tanggal}T${b.jam_selesai}`,
     backgroundColor: COLORS[b.status] || '#2563eb',

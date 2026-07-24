@@ -69,6 +69,13 @@ export const labBadge = (s) => {
     <span class="w-1.5 h-1.5 rounded-full ${dot}"></span>${label}</span>`;
 };
 
+// Label peserta / penanda jenis booking
+export const pesertaLabel = (b) => (b.tipe === 'alat' ? 'Pinjam alat' : `${b.jumlah_peserta} peserta`);
+export const tipeTag = (b) =>
+  b.tipe === 'alat'
+    ? `<span class="px-2 py-0.5 rounded-md text-[10px] font-semibold bg-violet-100 text-violet-700">Pinjam Alat</span>`
+    : '';
+
 // Baris alat yang dipinjam (dengan jumlah)
 export const equipLine = (list) => {
   if (!list || !list.length) return '';

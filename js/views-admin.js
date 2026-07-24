@@ -92,17 +92,17 @@ function paintAdminBookings(container, rows, refresh) {
         <div class="w-11 h-11 rounded-2xl bg-gradient-to-br from-brand-500 to-brand-600 text-white shadow-glow grid place-items-center shrink-0"><i data-lucide="flask-conical" class="w-5 h-5"></i></div>
         <div class="flex-1 min-w-0">
           <div class="flex items-center gap-2 flex-wrap">
-            <p class="font-semibold text-slate-800">${U.escapeHtml(b.laboratories?.nama || '-')}</p>${U.bookingBadge(b.status)}
+            <p class="font-semibold text-slate-800">${U.escapeHtml(b.laboratories?.nama || '-')}</p>${U.bookingBadge(b.status)}${U.tipeTag(b)}
           </div>
           <p class="text-sm text-slate-500 mt-0.5">
             <i data-lucide="user" class="w-3.5 h-3.5 inline -mt-0.5"></i> ${U.escapeHtml(b.gurus?.nama || '-')} ·
-            ${U.fmtDate(b.tanggal)} · ${U.fmtTime(b.jam_mulai)}–${U.fmtTime(b.jam_selesai)} · ${b.jumlah_peserta} peserta${b.kelas ? ' · ' + U.escapeHtml(b.kelas) : ''}
+            ${U.fmtDate(b.tanggal)} · ${U.fmtTime(b.jam_mulai)}–${U.fmtTime(b.jam_selesai)} · ${U.pesertaLabel(b)}${b.kelas ? ' · ' + U.escapeHtml(b.kelas) : ''}
           </p>
           ${b.keperluan ? `<p class="text-sm text-slate-400 mt-0.5">${U.escapeHtml(b.keperluan)}</p>` : ''}
           ${U.equipLine(b.booking_equipment)}
           ${b.status === 'ditolak' && b.alasan_penolakan ? `<p class="text-sm text-rose-500 mt-1">Alasan: ${U.escapeHtml(b.alasan_penolakan)}</p>` : ''}
           <div class="flex gap-2 mt-3 flex-wrap">
-            <button data-siswa="${b.id}" class="text-xs font-medium px-3 py-1.5 rounded-lg bg-slate-100 text-slate-600 hover:bg-slate-200 flex items-center gap-1"><i data-lucide="users" class="w-3.5 h-3.5"></i>Lihat siswa</button>
+            ${b.tipe !== 'alat' ? `<button data-siswa="${b.id}" class="text-xs font-medium px-3 py-1.5 rounded-lg bg-slate-100 text-slate-600 hover:bg-slate-200 flex items-center gap-1"><i data-lucide="users" class="w-3.5 h-3.5"></i>Lihat siswa</button>` : ''}
             ${b.status === 'menunggu' ? `
               <button data-act="disetujui" data-id="${b.id}" class="text-xs font-medium px-3 py-1.5 rounded-lg bg-emerald-600 text-white hover:bg-emerald-700 flex items-center gap-1"><i data-lucide="check" class="w-3.5 h-3.5"></i>Setujui</button>
               <button data-act="tolak" data-id="${b.id}" class="text-xs font-medium px-3 py-1.5 rounded-lg bg-rose-50 text-rose-600 hover:bg-rose-100 flex items-center gap-1"><i data-lucide="x" class="w-3.5 h-3.5"></i>Tolak</button>` : ''}
