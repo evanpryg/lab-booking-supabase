@@ -86,6 +86,41 @@ export const kondisiBadge = (k) => {
     <span class="w-1.5 h-1.5 rounded-full ${dot}"></span>${label}</span>`;
 };
 
+// Hitung stok alat per kondisi (jumlah per unit, bukan label global)
+export const stok = (e) => {
+  const total = e.jumlah || 0;
+  const rr = e.rusak_ringan || 0, rb = e.rusak_berat || 0, hl = e.hilang || 0;
+  return {
+    total, rr, rb, hl,
+    baik: Math.max(0, total - rr - rb - hl),
+    siap: Math.max(0, total - rb - hl), // rusak ringan masih bisa dipakai
+  };
+};
+
+// Badge ringkas jumlah per kondisi (hanya yang tidak nol)
+export const stokBadges = (e) => {
+  const s = stok(e);
+  const items = [];
+  if (s.baik) items.push(['Baik', s.baik, 'bg-emerald-50 text-emerald-700', 'bg-emerald-500']);
+  if (s.rr) items.push(['Rusak Ringan', s.rr, 'bg-amber-50 text-amber-700', 'bg-amber-500']);
+  if (s.rb) items.push(['Rusak Berat', s.rb, 'bg-rose-50 text-rose-700', 'bg-rose-500']);
+  if (s.hl) items.push(['Hilang', s.hl, 'bg-slate-200 text-slate-700', 'bg-slate-500']);
+  if (!items.length) return `<span class="text-xs text-slate-400">—</span>`;
+  return `<div class="flex flex-wrap gap-1">${items.map(([label, n, cls, dot]) => `
+    <span class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full text-[11px] font-semibold ${cls}">
+      <span class="w-1.5 h-1.5 rounded-full ${dot}"></span>${label} ${n}</span>`).join('')}</div>`;
+};
+
+// Ringkasan teks kondisi (untuk riwayat)
+export const stokRingkas = (e) => {
+  const s = stok(e);
+  const parts = [`Baik ${s.baik}`];
+  if (s.rr) parts.push(`Rusak Ringan ${s.rr}`);
+  if (s.rb) parts.push(`Rusak Berat ${s.rb}`);
+  if (s.hl) parts.push(`Hilang ${s.hl}`);
+  return `${parts.join(' · ')} (total ${s.total})`;
+};
+
 // Judul kartu booking (lab, atau "Peminjaman Alat" bila tanpa lab)
 export const bookingTitle = (b) => escapeHtml(b.laboratories?.nama || (b.tipe === 'alat' ? 'Peminjaman Alat' : '-'));
 

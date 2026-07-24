@@ -167,21 +167,25 @@ export async function newBooking(el) {
   const renderEquip = (eq, showLab, placeholder) => {
     equipEl.innerHTML = (eq && eq.length)
       ? eq.map((e) => {
-        const rusak = e.kondisi === 'rusak_berat' || e.kondisi === 'hilang';
+        const k = U.stok(e);
+        const habis = k.siap <= 0;                 // semua unit rusak berat / hilang
+        const catatan = [k.rb ? `${k.rb} rusak berat` : '', k.hl ? `${k.hl} hilang` : ''].filter(Boolean).join(', ');
         return `
-        <div class="flex items-start gap-3 text-sm border rounded-xl px-3 py-2.5 ${rusak ? 'border-slate-100 bg-slate-50' : 'border-slate-200'}">
-          <label class="flex items-start gap-2.5 flex-1 min-w-0 ${rusak ? 'cursor-not-allowed' : 'cursor-pointer'}">
-            <input type="checkbox" data-eqid="${e.id}" ${rusak ? 'disabled' : ''} class="equip-check rounded text-brand-600 mt-0.5 shrink-0 disabled:opacity-40">
+        <div class="flex items-start gap-3 text-sm border rounded-xl px-3 py-2.5 ${habis ? 'border-slate-100 bg-slate-50' : 'border-slate-200'}">
+          <label class="flex items-start gap-2.5 flex-1 min-w-0 ${habis ? 'cursor-not-allowed' : 'cursor-pointer'}">
+            <input type="checkbox" data-eqid="${e.id}" ${habis ? 'disabled' : ''} class="equip-check rounded text-brand-600 mt-0.5 shrink-0 disabled:opacity-40">
             <span class="min-w-0">
-              <span class="block font-medium break-words leading-snug ${rusak ? 'text-slate-400 line-through' : 'text-slate-700'}">${U.escapeHtml(e.nama)}</span>
-              <span class="block text-[11px] mt-0.5 ${rusak ? 'text-rose-500' : 'text-slate-400'}">
-                ${showLab && e.laboratories?.nama ? U.escapeHtml(e.laboratories.nama) + ' · ' : ''}${rusak ? (e.kondisi === 'hilang' ? 'Hilang — tidak bisa dipinjam' : 'Rusak berat — tidak bisa dipinjam') : `tersedia ${e.jumlah}`}
+              <span class="block font-medium break-words leading-snug ${habis ? 'text-slate-400 line-through' : 'text-slate-700'}">${U.escapeHtml(e.nama)}</span>
+              <span class="block text-[11px] mt-0.5 ${habis ? 'text-rose-500' : 'text-slate-400'}">
+                ${showLab && e.laboratories?.nama ? U.escapeHtml(e.laboratories.nama) + ' · ' : ''}${habis
+                  ? 'Tidak ada unit siap pakai'
+                  : `siap pakai <b class="text-slate-600">${k.siap}</b> dari ${k.total}${catatan ? ` · ${catatan}` : ''}`}
               </span>
             </span>
           </label>
-          <div class="flex items-center gap-1.5 shrink-0 ${rusak ? 'hidden' : ''}">
+          <div class="flex items-center gap-1.5 shrink-0 ${habis ? 'hidden' : ''}">
             <span class="text-[11px] text-slate-400 hidden sm:inline">pinjam</span>
-            <input type="number" data-qty="${e.id}" min="1" max="${e.jumlah}" value="1" disabled
+            <input type="number" data-qty="${e.id}" min="1" max="${k.siap}" value="1" disabled
               class="w-14 sm:w-16 rounded-lg border border-slate-200 px-2 py-1.5 text-sm text-center outline-none focus:border-brand-500 disabled:bg-slate-50 disabled:text-slate-300">
           </div>
         </div>`; }).join('')

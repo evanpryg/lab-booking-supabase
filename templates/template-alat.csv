@@ -1,5 +1,5 @@
-nama,lab_kode,jumlah,kondisi
-PC Desktop,LK1,30,baik
-Proyektor,LK1,1,baik
-Mikroskop,LIPA,15,baik
-Headset,LBHS,30,rusak_ringan
+nama,lab_kode,jumlah,rusak_ringan,rusak_berat,hilang
+PC Desktop,LK1,30,2,1,0
+Proyektor,LK1,1,0,0,0
+Mikroskop,LIPA,15,0,0,1
+Headset,LBHS,30,3,0,0

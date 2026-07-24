@@ -231,10 +231,12 @@ export async function equipment(el) {
   const aktif = usage.filter(isAktif);
   const terjadwal = usage.filter((u) => !isAktif(u));
 
-  const totalJenis = (eq || []).length;
+  // Hitung per UNIT (bukan per jenis) — mis. total 10, rusak 1
   const unitDipinjam = aktif.reduce((s, u) => s + (u.jumlah_pinjam || 0), 0);
-  const kondisiBaik = (eq || []).filter((e) => e.kondisi === 'baik').length;
-  const bermasalah = (eq || []).filter((e) => e.kondisi !== 'baik');
+  const totalUnit = (eq || []).reduce((s, e) => s + U.stok(e).total, 0);
+  const unitBaik = (eq || []).reduce((s, e) => s + U.stok(e).baik, 0);
+  const unitBermasalah = (eq || []).reduce((s, e) => { const k = U.stok(e); return s + k.rr + k.rb + k.hl; }, 0);
+  const bermasalah = (eq || []).filter((e) => { const k = U.stok(e); return k.rr + k.rb + k.hl > 0; });
 
   const usageRow = (u, badge) => `
     <div class="flex items-start gap-3 border-b border-slate-100 last:border-0 py-3">
@@ -248,10 +250,10 @@ export async function equipment(el) {
 
   el.innerHTML = `
     <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-      ${U.statTile('wrench', 'Jenis Alat', totalJenis, 'blue')}
+      ${U.statTile('wrench', `Total Unit (${(eq || []).length} jenis)`, totalUnit, 'blue')}
       ${U.statTile('arrow-up-right', 'Unit Sedang Dipinjam', unitDipinjam, 'amber')}
-      ${U.statTile('check-circle-2', 'Kondisi Baik', kondisiBaik, 'emerald')}
-      ${U.statTile('alert-triangle', 'Rusak / Hilang', bermasalah.length, 'red')}
+      ${U.statTile('check-circle-2', 'Unit Kondisi Baik', unitBaik, 'emerald')}
+      ${U.statTile('alert-triangle', 'Unit Rusak / Hilang', unitBermasalah, 'red')}
     </div>
 
     <div class="grid lg:grid-cols-2 gap-6 mb-6">
@@ -270,10 +272,12 @@ export async function equipment(el) {
     ${bermasalah.length ? `
       <div class="mb-6">
         <h2 class="font-semibold text-slate-800 font-display mb-2">Perlu Perhatian (Rusak / Hilang)</h2>
-        ${U.card(`<div class="p-4 flex flex-wrap gap-2">${bermasalah.map((e) => `
-          <span class="inline-flex items-center gap-2 border border-slate-200 rounded-xl px-3 py-1.5 text-sm">
-            ${U.escapeHtml(e.nama)} ${U.kondisiBadge(e.kondisi)}
-          </span>`).join('')}</div>`)}
+        ${U.card(`<div class="p-4 space-y-2">${bermasalah.map((e) => `
+          <div class="flex items-start gap-3 flex-wrap border border-slate-200 rounded-xl px-3 py-2">
+            <span class="text-sm font-medium text-slate-700">${U.escapeHtml(e.nama)}
+              <span class="text-xs text-slate-400 font-normal">· total ${U.stok(e).total}</span></span>
+            ${U.stokBadges(e)}
+          </div>`).join('')}</div>`)}
       </div>` : ''}
 
     <div class="flex items-center justify-between gap-2 mb-4">
@@ -284,16 +288,17 @@ export async function equipment(el) {
       </div>
     </div>
     ${!eq?.length ? U.emptyState('Belum ada alat') : U.card(`
-      <div class="overflow-x-auto"><table class="w-full text-sm min-w-[560px]">
+      <div class="overflow-x-auto"><table class="w-full text-sm min-w-[720px]">
         <thead class="text-left text-slate-400 border-b border-slate-200/70">
-          <tr><th class="p-4 font-medium">Nama</th><th class="p-4 font-medium">Lab</th><th class="p-4 font-medium">Jumlah</th><th class="p-4 font-medium">Kondisi</th><th class="p-4"></th></tr>
+          <tr><th class="p-4 font-medium">Nama</th><th class="p-4 font-medium">Lab</th><th class="p-4 font-medium">Total</th><th class="p-4 font-medium">Siap Pakai</th><th class="p-4 font-medium">Rincian Kondisi</th><th class="p-4"></th></tr>
         </thead>
         <tbody>${eq.map((e) => `
           <tr class="border-b border-slate-100 last:border-0">
             <td class="p-4 font-medium text-slate-700">${U.escapeHtml(e.nama)}</td>
             <td class="p-4 text-slate-500">${U.escapeHtml(e.laboratories?.nama || '-')}</td>
-            <td class="p-4 text-slate-500">${e.jumlah}</td>
-            <td class="p-4">${U.kondisiBadge(e.kondisi)}</td>
+            <td class="p-4 text-slate-500">${U.stok(e).total}</td>
+            <td class="p-4 font-semibold ${U.stok(e).siap > 0 ? 'text-emerald-600' : 'text-rose-600'}">${U.stok(e).siap}</td>
+            <td class="p-4">${U.stokBadges(e)}</td>
             <td class="p-4 text-right whitespace-nowrap">
               <button data-hist="${e.id}" title="Riwayat kondisi" class="text-slate-400 hover:text-brand-600 p-1.5"><i data-lucide="history" class="w-4 h-4"></i></button>
               <button data-edit="${e.id}" class="text-slate-400 hover:text-brand-600 p-1.5"><i data-lucide="pencil" class="w-4 h-4"></i></button>
@@ -316,18 +321,36 @@ async function equipForm(item, labs) {
     html: `
       <input id="s-nama" class="swal2-input" placeholder="Nama alat" value="${U.escapeHtml(item?.nama || '')}">
       <select id="s-lab" class="swal2-select">${labs.map((l) => `<option value="${l.id}" ${item?.lab_id === l.id ? 'selected' : ''}>${U.escapeHtml(l.nama)}</option>`).join('')}</select>
-      <input id="s-jml" type="number" class="swal2-input" placeholder="Jumlah" value="${item?.jumlah ?? 1}">
-      <select id="s-kondisi" class="swal2-select">${[['baik', 'Baik'], ['rusak_ringan', 'Rusak Ringan'], ['rusak_berat', 'Rusak Berat'], ['hilang', 'Hilang']].map(([k, l]) => `<option value="${k}" ${item?.kondisi === k ? 'selected' : ''}>${l}</option>`).join('')}</select>
-      <textarea id="s-catatan" class="swal2-textarea" placeholder="Catatan (diisi bila kondisi berubah, mis. layar pecah saat praktikum)"></textarea>`,
+      <input id="s-jml" type="number" min="1" class="swal2-input" placeholder="Jumlah total unit" value="${item?.jumlah ?? 1}">
+      <div style="display:flex;gap:8px;margin:0 1em">
+        <label style="flex:1;text-align:left;font-size:12px;color:#64748b">Rusak Ringan
+          <input id="s-rr" type="number" min="0" value="${item?.rusak_ringan ?? 0}" style="width:100%;padding:6px 8px;border:1px solid #e2e8f0;border-radius:8px;font-size:14px">
+        </label>
+        <label style="flex:1;text-align:left;font-size:12px;color:#64748b">Rusak Berat
+          <input id="s-rb" type="number" min="0" value="${item?.rusak_berat ?? 0}" style="width:100%;padding:6px 8px;border:1px solid #e2e8f0;border-radius:8px;font-size:14px">
+        </label>
+        <label style="flex:1;text-align:left;font-size:12px;color:#64748b">Hilang
+          <input id="s-hl" type="number" min="0" value="${item?.hilang ?? 0}" style="width:100%;padding:6px 8px;border:1px solid #e2e8f0;border-radius:8px;font-size:14px">
+        </label>
+      </div>
+      <p style="font-size:12px;color:#64748b;margin:6px 1em 0;text-align:left">Sisanya otomatis dihitung sebagai <b>Baik</b>. Unit <b>Rusak Berat</b> &amp; <b>Hilang</b> tidak bisa dipinjam.</p>
+      <textarea id="s-catatan" class="swal2-textarea" placeholder="Catatan (bila kondisi berubah, mis. 1 unit layar pecah saat praktikum)"></textarea>`,
     showCancelButton: true, confirmButtonText: 'Simpan', cancelButtonText: 'Batal', confirmButtonColor: '#2563eb',
     focusConfirm: false,
     preConfirm: () => {
       const nama = document.getElementById('s-nama').value.trim();
       if (!nama) { Swal.showValidationMessage('Nama wajib diisi'); return false; }
+      const jumlah = Number(document.getElementById('s-jml').value) || 1;
+      const rr = Math.max(0, Number(document.getElementById('s-rr').value) || 0);
+      const rb = Math.max(0, Number(document.getElementById('s-rb').value) || 0);
+      const hl = Math.max(0, Number(document.getElementById('s-hl').value) || 0);
+      if (rr + rb + hl > jumlah) {
+        Swal.showValidationMessage(`Rusak + hilang (${rr + rb + hl}) melebihi jumlah total (${jumlah})`);
+        return false;
+      }
       return {
         nama, lab_id: document.getElementById('s-lab').value,
-        jumlah: Number(document.getElementById('s-jml').value) || 1,
-        kondisi: document.getElementById('s-kondisi').value,
+        jumlah, rusak_ringan: rr, rusak_berat: rb, hilang: hl,
         _catatan: document.getElementById('s-catatan').value.trim() || null,
       };
     },
@@ -339,17 +362,20 @@ async function equipForm(item, labs) {
   const { error } = item ? await db.updateEquipment(item.id, value) : await db.createEquipment(value);
   if (error) return U.alertError(error.message);
 
-  // Catat riwayat bila kondisi berubah (siapa peminjam terakhir ikut disimpan)
-  if (item && item.kondisi !== value.kondisi) {
-    const { data: last } = await db.lastBorrower(item.id);
-    await db.createEquipmentLog({
-      equipment_id: item.id,
-      kondisi_lama: item.kondisi,
-      kondisi_baru: value.kondisi,
-      catatan,
-      peminjam_terakhir: last?.guru || null,
-      tanggal_pinjam_terakhir: last?.tanggal || null,
-    });
+  // Catat riwayat bila rincian kondisi/jumlah berubah (peminjam terakhir ikut disimpan)
+  if (item) {
+    const a = U.stok(item), b = U.stok(value);
+    if (a.total !== b.total || a.rr !== b.rr || a.rb !== b.rb || a.hl !== b.hl) {
+      const { data: last } = await db.lastBorrower(item.id);
+      await db.createEquipmentLog({
+        equipment_id: item.id,
+        kondisi_lama: U.stokRingkas(item),
+        kondisi_baru: U.stokRingkas(value),
+        catatan,
+        peminjam_terakhir: last?.guru || null,
+        tanggal_pinjam_terakhir: last?.tanggal || null,
+      });
+    }
   }
   U.toast('success', 'Tersimpan'); reload(equipment);
 }
@@ -366,8 +392,10 @@ async function equipHistory(item) {
       <div class="text-left max-h-80 overflow-y-auto divide-y divide-slate-100">
         ${rows.map((r) => `
           <div class="py-3">
-            <div class="flex items-center gap-2 flex-wrap text-sm">
-              ${U.kondisiBadge(r.kondisi_lama || '-')}<span class="text-slate-400">→</span>${U.kondisiBadge(r.kondisi_baru)}
+            <div class="flex items-start gap-2 flex-wrap text-sm">
+              <span class="text-slate-400">${U.escapeHtml(r.kondisi_lama || '-')}</span>
+              <span class="text-slate-400">→</span>
+              <span class="font-medium text-slate-700">${U.escapeHtml(r.kondisi_baru)}</span>
             </div>
             <p class="text-xs text-slate-400 mt-1">${new Date(r.created_at).toLocaleString('id-ID', { dateStyle: 'medium', timeStyle: 'short' })}</p>
             ${r.catatan ? `<p class="text-sm text-slate-600 mt-1">${U.escapeHtml(r.catatan)}</p>` : ''}
@@ -579,13 +607,26 @@ function importStudents() {
 function importEquipment(labs) {
   const byKode = {}, byNama = {};
   labs.forEach((l) => { if (l.kode) byKode[l.kode.toLowerCase()] = l.id; byNama[l.nama.toLowerCase()] = l.id; });
-  const KOND = ['baik', 'rusak_ringan', 'rusak_berat', 'hilang'];
   pickAndParse(async (raw) => {
     const rows = raw.map(normKeys).map((r) => {
       const key = String(r.lab_kode || r.kode || r.lab || '').trim().toLowerCase();
-      let kondisi = String(r.kondisi || 'baik').trim().toLowerCase().replace(/\s+/g, '_');
-      if (!KOND.includes(kondisi)) kondisi = 'baik';
-      return { nama: String(r.nama || '').trim(), lab_id: byKode[key] || byNama[key] || null, jumlah: Number(r.jumlah) || 1, kondisi };
+      const jumlah = Math.max(1, Number(r.jumlah) || 1);
+      let rr = Math.max(0, Number(r.rusak_ringan) || 0);
+      let rb = Math.max(0, Number(r.rusak_berat) || 0);
+      let hl = Math.max(0, Number(r.hilang) || 0);
+      // Kompatibilitas: file lama yang memakai kolom tunggal `kondisi`
+      if (!rr && !rb && !hl) {
+        const k = String(r.kondisi || '').trim().toLowerCase().replace(/\s+/g, '_');
+        if (k === 'rusak_ringan') rr = jumlah;
+        else if (k === 'rusak_berat') rb = jumlah;
+        else if (k === 'hilang') hl = jumlah;
+      }
+      // Jaga agar tidak melebihi total
+      if (rr + rb + hl > jumlah) { rr = Math.min(rr, jumlah); rb = Math.min(rb, jumlah - rr); hl = Math.min(hl, jumlah - rr - rb); }
+      return {
+        nama: String(r.nama || '').trim(), lab_id: byKode[key] || byNama[key] || null,
+        jumlah, rusak_ringan: rr, rusak_berat: rb, hilang: hl,
+      };
     }).filter((r) => r.nama && r.lab_id);
     if (!rows.length) return U.alertError('Tidak ada baris valid. Wajib kolom "nama" dan "lab_kode" (kode lab yang cocok).');
     const c = await U.confirmAction({ title: `Import ${rows.length} alat?`, confirmText: 'Import', icon: 'question' });
