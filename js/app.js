@@ -66,7 +66,7 @@ async function renderGuruFab() {
   fab.target = '_blank';
   fab.rel = 'noopener';
   fab.className = 'fixed bottom-6 right-6 z-40 flex items-center gap-2 bg-green-500 hover:bg-green-600 active:scale-95 text-white font-semibold pl-4 pr-5 py-3 rounded-full shadow-float transition';
-  fab.innerHTML = `<i data-lucide="message-circle" class="w-5 h-5"></i><span class="text-sm">Lapor Kendala</span>`;
+  fab.innerHTML = `<i data-lucide="message-circle" class="w-5 h-5"></i>`;
   document.body.appendChild(fab);
   U.icons();
 }
