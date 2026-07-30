@@ -24,7 +24,7 @@ export async function dashboard(el) {
     ${U.heroBanner({
       name: 'Administrator',
       subtitle: `${count('menunggu')} booking menunggu persetujuan Anda.`,
-      actionHtml: `<a href="#/admin/bookings" class="bg-white/95 hover:bg-white text-brand-700 font-semibold text-sm px-4 py-2.5 rounded-xl flex items-center gap-2 shadow-sm transition"><i data-lucide="calendar-check" class="w-4 h-4"></i>Kelola Booking</a>`,
+      actionHtml: `<a href="#/admin/bookings" class="bg-white hover:bg-brand-50 text-brand-700 font-semibold text-[13.5px] px-5 py-3 rounded-xl flex items-center gap-2 shadow-float active:scale-95 transition-all shrink-0"><i data-lucide="calendar-check" class="w-4 h-4"></i>Kelola Booking</a>`,
     })}
     <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
       ${U.statTile('calendar-check', 'Total Booking', rows.length, 'blue')}
@@ -36,14 +36,14 @@ export async function dashboard(el) {
   el.innerHTML += `
     <div class="grid lg:grid-cols-3 gap-6">
       <div class="lg:col-span-2">
-        <h2 class="font-semibold text-slate-800 mb-3">Menunggu Persetujuan</h2>
+        <h2 class="font-semibold text-slate-900 font-display text-[17px] mb-3">Menunggu Persetujuan</h2>
         <div id="pending"></div>
       </div>
       <div>
-        <h2 class="font-semibold text-slate-800 mb-3">Status Laboratorium</h2>
+        <h2 class="font-semibold text-slate-900 font-display text-[17px] mb-3">Status Laboratorium</h2>
         <div class="space-y-2">
           ${(labs || []).map((l) => `
-            <div class="bg-white rounded-xl border border-slate-200/70 shadow-card p-3.5 flex items-center justify-between">
+            <div class="bg-white rounded-xl border border-slate-200 shadow-card p-3.5 flex items-center justify-between">
               <div><p class="text-sm font-medium text-slate-700">${U.escapeHtml(l.nama)}</p>
               <p class="text-[11px] text-slate-400">${U.escapeHtml(l.lokasi || '')}</p></div>
               ${U.labBadge(l.status_efektif)}
@@ -66,14 +66,14 @@ export async function bookings(el, status = '', month) {
   const { data, error } = await db.bookings(filter);
   if (error) throw error;
   el.innerHTML = `
-    <div class="flex flex-col sm:flex-row gap-3 sm:items-center justify-between mb-4">
-      <div class="flex gap-2 flex-wrap">
-        ${FILTERS.map(([v, l]) => `<button data-f="${v}" class="filter px-3.5 py-1.5 rounded-full text-sm font-medium transition
-          ${v === status ? 'bg-brand-600 text-white' : 'bg-white border border-slate-200 text-slate-600 hover:bg-brand-50'}">${l}</button>`).join('')}
+    <div class="flex flex-col xl:flex-row xl:items-center xl:justify-between gap-3 mb-5">
+      <div class="flex gap-2 flex-wrap min-w-0">
+        ${FILTERS.map(([v, l]) => `<button data-f="${v}" class="filter px-4 py-2 rounded-full text-[13px] font-semibold whitespace-nowrap transition-all
+          ${v === status ? 'bg-brand-600 text-white shadow-glow' : 'bg-white border border-slate-200 text-slate-500 hover:bg-brand-50 hover:text-brand-700 hover:border-brand-200'}">${l}</button>`).join('')}
       </div>
       <div class="flex items-center gap-2 shrink-0">
-        <input type="month" id="month" value="${month}" class="rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none focus:border-brand-500 focus:ring-4 focus:ring-brand-500/15">
-        <button id="allmonth" class="px-3 py-2 rounded-xl text-sm font-medium border transition ${month ? 'bg-white border-slate-200 text-slate-600 hover:bg-brand-50' : 'bg-brand-600 border-brand-600 text-white'}">Semua bulan</button>
+        <input type="month" id="month" value="${month}" class="rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-[13px] font-medium text-slate-700 outline-none focus:border-brand-500 focus:ring-4 focus:ring-brand-500/12">
+        <button id="allmonth" class="px-3.5 py-2 rounded-xl text-[13px] font-semibold whitespace-nowrap border transition-all ${month ? 'bg-white border-slate-200 text-slate-500 hover:bg-brand-50 hover:text-brand-700 hover:border-brand-200' : 'bg-brand-600 border-brand-600 text-white shadow-glow'}">Semua bulan</button>
       </div>
     </div>
     <div id="list"></div>`;
@@ -87,12 +87,12 @@ export async function bookings(el, status = '', month) {
 function paintAdminBookings(container, rows, refresh) {
   if (!rows.length) { container.innerHTML = U.emptyState('Tidak ada data booking'); return; }
   container.innerHTML = `<div class="space-y-3">${rows.map((b) => `
-    <div class="bg-white rounded-2xl border border-slate-200/70 shadow-card p-4">
+    <div class="bg-white rounded-2xl border border-slate-200 shadow-card p-4">
       <div class="flex items-start gap-4">
-        <div class="w-11 h-11 rounded-2xl bg-gradient-to-br from-brand-500 to-brand-600 text-white shadow-glow grid place-items-center shrink-0"><i data-lucide="flask-conical" class="w-5 h-5"></i></div>
+        <div class="w-11 h-11 rounded-2xl bg-brand-50 text-brand-600 grid place-items-center shrink-0"><i data-lucide="flask-conical" class="w-5 h-5"></i></div>
         <div class="flex-1 min-w-0">
           <div class="flex items-center gap-2 flex-wrap">
-            <p class="font-semibold text-slate-800">${U.bookingTitle(b)}</p>${U.bookingBadge(b.status)}${U.tipeTag(b)}
+            <p class="font-semibold text-slate-900 font-display text-[15.5px]">${U.bookingTitle(b)}</p>${U.bookingBadge(b.status)}${U.tipeTag(b)}
           </div>
           <p class="text-sm text-slate-500 mt-0.5">
             <i data-lucide="user" class="w-3.5 h-3.5 inline -mt-0.5"></i> ${U.escapeHtml(b.gurus?.nama || '-')} ·
@@ -100,16 +100,16 @@ function paintAdminBookings(container, rows, refresh) {
           </p>
           ${b.keperluan ? `<p class="text-sm text-slate-400 mt-0.5">${U.escapeHtml(b.keperluan)}</p>` : ''}
           ${U.equipLine(b.booking_equipment)}
-          ${b.status === 'ditolak' && b.alasan_penolakan ? `<p class="text-sm text-rose-500 mt-1">Alasan: ${U.escapeHtml(b.alasan_penolakan)}</p>` : ''}
+          ${b.status === 'ditolak' && b.alasan_penolakan ? `<p class="text-sm text-coral-600 mt-1">Alasan: ${U.escapeHtml(b.alasan_penolakan)}</p>` : ''}
           <div class="flex gap-2 mt-3 flex-wrap">
             ${b.tipe !== 'alat' ? `<button data-siswa="${b.id}" class="text-xs font-medium px-3 py-1.5 rounded-lg bg-slate-100 text-slate-600 hover:bg-slate-200 flex items-center gap-1"><i data-lucide="users" class="w-3.5 h-3.5"></i>Lihat siswa</button>` : ''}
             ${b.status === 'menunggu' ? `
               <button data-act="disetujui" data-id="${b.id}" class="text-xs font-medium px-3 py-1.5 rounded-lg bg-emerald-600 text-white hover:bg-emerald-700 flex items-center gap-1"><i data-lucide="check" class="w-3.5 h-3.5"></i>Setujui</button>
-              <button data-act="tolak" data-id="${b.id}" class="text-xs font-medium px-3 py-1.5 rounded-lg bg-rose-50 text-rose-600 hover:bg-rose-100 flex items-center gap-1"><i data-lucide="x" class="w-3.5 h-3.5"></i>Tolak</button>` : ''}
+              <button data-act="tolak" data-id="${b.id}" class="text-xs font-medium px-3 py-1.5 rounded-lg bg-coral-50 text-coral-700 hover:bg-coral-100 flex items-center gap-1"><i data-lucide="x" class="w-3.5 h-3.5"></i>Tolak</button>` : ''}
             ${b.status === 'disetujui' ? `
               <button data-act="selesai" data-id="${b.id}" class="text-xs font-medium px-3 py-1.5 rounded-lg bg-brand-600 text-white hover:bg-brand-700 flex items-center gap-1"><i data-lucide="flag" class="w-3.5 h-3.5"></i>Tandai Selesai</button>` : ''}
             ${['dibatalkan', 'ditolak'].includes(b.status) ? `
-              <button data-act="hapus" data-id="${b.id}" class="text-xs font-medium px-3 py-1.5 rounded-lg bg-rose-50 text-rose-600 hover:bg-rose-100 flex items-center gap-1"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i>Hapus</button>` : ''}
+              <button data-act="hapus" data-id="${b.id}" class="text-xs font-medium px-3 py-1.5 rounded-lg bg-coral-50 text-coral-700 hover:bg-coral-100 flex items-center gap-1"><i data-lucide="trash-2" class="w-3.5 h-3.5"></i>Hapus</button>` : ''}
           </div>
         </div>
       </div>
@@ -158,13 +158,13 @@ export async function labs(el) {
   if (error) throw error;
   el.innerHTML = `
     <div class="flex justify-end mb-4">
-      <button id="add" class="text-sm bg-gradient-to-r from-brand-600 to-brand-500 shadow-glow hover:to-brand-600 text-white px-3.5 py-2 rounded-xl flex items-center gap-1.5"><i data-lucide="plus" class="w-4 h-4"></i>Tambah Lab</button>
+      <button id="add" class="text-sm bg-brand-600 hover:bg-brand-700 shadow-glow active:scale-95 text-white px-3.5 py-2 rounded-xl flex items-center gap-1.5"><i data-lucide="plus" class="w-4 h-4"></i>Tambah Lab</button>
     </div>
     <div class="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
       ${(data || []).map((l) => `
-        <div class="bg-white rounded-2xl border border-slate-200/70 shadow-card p-5">
+        <div class="bg-white rounded-2xl border border-slate-200 shadow-card p-5">
           <div class="flex items-start justify-between">
-            <div class="w-11 h-11 rounded-2xl bg-gradient-to-br from-brand-500 to-brand-600 text-white shadow-glow grid place-items-center"><i data-lucide="flask-conical" class="w-5 h-5"></i></div>
+            <div class="w-11 h-11 rounded-2xl bg-brand-50 text-brand-600 grid place-items-center"><i data-lucide="flask-conical" class="w-5 h-5"></i></div>
             ${U.labBadge(l.status_efektif)}
           </div>
           <p class="font-semibold text-slate-800 mt-3">${U.escapeHtml(l.nama)}</p>
@@ -174,7 +174,7 @@ export async function labs(el) {
               ${['tersedia', 'maintenance', 'ditutup'].map((s) => `<option value="${s}" ${l.status === s ? 'selected' : ''}>${s}</option>`).join('')}
             </select>
             <button data-edit="${l.id}" class="text-slate-400 hover:text-brand-600 p-1.5"><i data-lucide="pencil" class="w-4 h-4"></i></button>
-            <button data-del="${l.id}" class="text-slate-400 hover:text-rose-600 p-1.5"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+            <button data-del="${l.id}" class="text-slate-400 hover:text-coral-700 p-1.5"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
           </div>
         </div>`).join('')}
     </div>`;
@@ -200,7 +200,7 @@ async function labForm(lab = null) {
       <input id="s-kode" class="swal2-input" placeholder="Kode (mis. LK1)" value="${U.escapeHtml(lab?.kode || '')}">
       <input id="s-kap" type="number" class="swal2-input" placeholder="Kapasitas" value="${lab?.kapasitas ?? 30}">
       <input id="s-lokasi" class="swal2-input" placeholder="Lokasi" value="${U.escapeHtml(lab?.lokasi || '')}">`,
-    showCancelButton: true, confirmButtonText: 'Simpan', cancelButtonText: 'Batal', confirmButtonColor: '#2563eb',
+    showCancelButton: true, confirmButtonText: 'Simpan', cancelButtonText: 'Batal', confirmButtonColor: '#0F766E',
     focusConfirm: false,
     preConfirm: () => {
       const nama = document.getElementById('s-nama').value.trim();
@@ -258,12 +258,12 @@ export async function equipment(el) {
 
     <div class="grid lg:grid-cols-2 gap-6 mb-6">
       <div>
-        <h2 class="font-semibold text-slate-800 font-display mb-2">Sedang Dipinjam</h2>
+        <h2 class="font-semibold text-slate-900 font-display text-[17px] mb-2">Sedang Dipinjam</h2>
         ${U.card(`<div class="px-4">${aktif.length ? aktif.map((u) => usageRow(u, `<span class="px-2 py-1 rounded-full text-[10px] font-semibold bg-emerald-50 text-emerald-700 shrink-0">Berlangsung</span>`)).join('')
           : `<p class="text-sm text-slate-400 py-6 text-center">Tidak ada alat yang sedang dipinjam.</p>`}</div>`)}
       </div>
       <div>
-        <h2 class="font-semibold text-slate-800 font-display mb-2">Terjadwal</h2>
+        <h2 class="font-semibold text-slate-900 font-display text-[17px] mb-2">Terjadwal</h2>
         ${U.card(`<div class="px-4">${terjadwal.length ? terjadwal.slice(0, 6).map((u) => usageRow(u, `<span class="px-2 py-1 rounded-full text-[10px] font-semibold bg-slate-100 text-slate-600 shrink-0">Terjadwal</span>`)).join('')
           : `<p class="text-sm text-slate-400 py-6 text-center">Belum ada jadwal peminjaman alat.</p>`}</div>`)}
       </div>
@@ -271,7 +271,7 @@ export async function equipment(el) {
 
     ${bermasalah.length ? `
       <div class="mb-6">
-        <h2 class="font-semibold text-slate-800 font-display mb-2">Perlu Perhatian (Rusak / Hilang)</h2>
+        <h2 class="font-semibold text-slate-900 font-display text-[17px] mb-2">Perlu Perhatian (Rusak / Hilang)</h2>
         ${U.card(`<div class="p-4 space-y-2">${bermasalah.map((e) => `
           <div class="flex items-start gap-3 flex-wrap border border-slate-200 rounded-xl px-3 py-2">
             <span class="text-sm font-medium text-slate-700">${U.escapeHtml(e.nama)}
@@ -281,15 +281,15 @@ export async function equipment(el) {
       </div>` : ''}
 
     <div class="flex items-center justify-between gap-2 mb-4">
-      <h2 class="font-semibold text-slate-800 font-display">Daftar Alat</h2>
+      <h2 class="font-semibold text-slate-900 font-display text-[17px]">Daftar Alat</h2>
       <div class="flex gap-2">
         <button id="import" class="text-sm bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 px-3.5 py-2 rounded-xl flex items-center gap-1.5"><i data-lucide="upload" class="w-4 h-4"></i><span class="hidden sm:inline">Import Excel/CSV</span></button>
-        <button id="add" class="text-sm bg-gradient-to-r from-brand-600 to-brand-500 shadow-glow hover:to-brand-600 text-white px-3.5 py-2 rounded-xl flex items-center gap-1.5"><i data-lucide="plus" class="w-4 h-4"></i>Tambah</button>
+        <button id="add" class="text-sm bg-brand-600 hover:bg-brand-700 shadow-glow active:scale-95 text-white px-3.5 py-2 rounded-xl flex items-center gap-1.5"><i data-lucide="plus" class="w-4 h-4"></i>Tambah</button>
       </div>
     </div>
     ${!eq?.length ? U.emptyState('Belum ada alat') : U.card(`
       <div class="overflow-x-auto"><table class="w-full text-sm min-w-[720px]">
-        <thead class="text-left text-slate-400 border-b border-slate-200/70">
+        <thead class="text-left text-slate-400 border-b border-slate-200">
           <tr><th class="p-4 font-medium">Nama</th><th class="p-4 font-medium">Lab</th><th class="p-4 font-medium">Total</th><th class="p-4 font-medium">Siap Pakai</th><th class="p-4 font-medium">Rincian Kondisi</th><th class="p-4"></th></tr>
         </thead>
         <tbody>${eq.map((e) => `
@@ -297,12 +297,12 @@ export async function equipment(el) {
             <td class="p-4 font-medium text-slate-700">${U.escapeHtml(e.nama)}</td>
             <td class="p-4 text-slate-500">${U.escapeHtml(e.laboratories?.nama || '-')}</td>
             <td class="p-4 text-slate-500">${U.stok(e).total}</td>
-            <td class="p-4 font-semibold ${U.stok(e).siap > 0 ? 'text-emerald-600' : 'text-rose-600'}">${U.stok(e).siap}</td>
+            <td class="p-4 font-semibold ${U.stok(e).siap > 0 ? 'text-emerald-600' : 'text-coral-700'}">${U.stok(e).siap}</td>
             <td class="p-4">${U.stokBadges(e)}</td>
             <td class="p-4 text-right whitespace-nowrap">
               <button data-hist="${e.id}" title="Riwayat kondisi" class="text-slate-400 hover:text-brand-600 p-1.5"><i data-lucide="history" class="w-4 h-4"></i></button>
               <button data-edit="${e.id}" class="text-slate-400 hover:text-brand-600 p-1.5"><i data-lucide="pencil" class="w-4 h-4"></i></button>
-              <button data-del="${e.id}" class="text-slate-400 hover:text-rose-600 p-1.5"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+              <button data-del="${e.id}" class="text-slate-400 hover:text-coral-700 p-1.5"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
             </td>
           </tr>`).join('')}</tbody>
       </table></div>`)}`;
@@ -335,7 +335,7 @@ async function equipForm(item, labs) {
       </div>
       <p style="font-size:12px;color:#64748b;margin:6px 1em 0;text-align:left">Sisanya otomatis dihitung sebagai <b>Baik</b>. Unit <b>Rusak Berat</b> &amp; <b>Hilang</b> tidak bisa dipinjam.</p>
       <textarea id="s-catatan" class="swal2-textarea" placeholder="Catatan (bila kondisi berubah, mis. 1 unit layar pecah saat praktikum)"></textarea>`,
-    showCancelButton: true, confirmButtonText: 'Simpan', cancelButtonText: 'Batal', confirmButtonColor: '#2563eb',
+    showCancelButton: true, confirmButtonText: 'Simpan', cancelButtonText: 'Batal', confirmButtonColor: '#0F766E',
     focusConfirm: false,
     preConfirm: () => {
       const nama = document.getElementById('s-nama').value.trim();
@@ -403,7 +403,7 @@ async function equipHistory(item) {
           </div>`).join('')}
       </div>`
       : `<p class="text-slate-400 text-sm">Belum ada perubahan kondisi yang tercatat.</p>`,
-    confirmButtonColor: '#2563eb',
+    confirmButtonColor: '#0F766E',
   });
 }
 
@@ -413,11 +413,11 @@ export async function gurus(el) {
   if (error) throw error;
   el.innerHTML = `
     <div class="flex justify-end mb-4">
-      <button id="add" class="text-sm bg-gradient-to-r from-brand-600 to-brand-500 shadow-glow hover:to-brand-600 text-white px-3.5 py-2 rounded-xl flex items-center gap-1.5"><i data-lucide="plus" class="w-4 h-4"></i>Tambah Guru</button>
+      <button id="add" class="text-sm bg-brand-600 hover:bg-brand-700 shadow-glow active:scale-95 text-white px-3.5 py-2 rounded-xl flex items-center gap-1.5"><i data-lucide="plus" class="w-4 h-4"></i>Tambah Guru</button>
     </div>
     ${!data?.length ? U.emptyState('Belum ada guru') : U.card(`
       <div class="overflow-x-auto"><table class="w-full text-sm min-w-[480px]">
-        <thead class="text-left text-slate-400 border-b border-slate-200/70">
+        <thead class="text-left text-slate-400 border-b border-slate-200">
           <tr><th class="p-4 font-medium">Nama</th><th class="p-4 font-medium">Kode Guru</th><th class="p-4 font-medium">Mapel</th><th class="p-4"></th></tr>
         </thead>
         <tbody>${data.map((g) => `
@@ -427,7 +427,7 @@ export async function gurus(el) {
             <td class="p-4 text-slate-500">${U.escapeHtml(g.mapel || '-')}</td>
             <td class="p-4 text-right whitespace-nowrap">
               <button data-edit="${g.id}" class="text-slate-400 hover:text-brand-600 p-1.5"><i data-lucide="pencil" class="w-4 h-4"></i></button>
-              <button data-del="${g.id}" class="text-slate-400 hover:text-rose-600 p-1.5"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+              <button data-del="${g.id}" class="text-slate-400 hover:text-coral-700 p-1.5"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
             </td>
           </tr>`).join('')}</tbody>
       </table></div>`)}`;
@@ -445,7 +445,7 @@ async function guruForm(guru = null) {
       <input id="s-nama" class="swal2-input" placeholder="Nama lengkap" value="${U.escapeHtml(guru?.nama || '')}">
       <input id="s-nip" class="swal2-input" placeholder="Kode Guru" value="${U.escapeHtml(guru?.nip || '')}">
       <input id="s-mapel" class="swal2-input" placeholder="Mata pelajaran" value="${U.escapeHtml(guru?.mapel || '')}">`,
-    showCancelButton: true, confirmButtonText: 'Simpan', cancelButtonText: 'Batal', confirmButtonColor: '#2563eb',
+    showCancelButton: true, confirmButtonText: 'Simpan', cancelButtonText: 'Batal', confirmButtonColor: '#0F766E',
     focusConfirm: false,
     preConfirm: () => {
       const nama = document.getElementById('s-nama').value.trim();
@@ -473,16 +473,16 @@ export async function students(el) {
       <div class="flex gap-2 flex-1">
         <div class="relative flex-1 max-w-xs">
           <i data-lucide="search" class="w-4 h-4 text-slate-400 absolute left-3 top-3"></i>
-          <input id="q" placeholder="Cari nama / NIS…" class="w-full rounded-xl border border-slate-200 pl-9 pr-3 py-2.5 text-sm outline-none focus:border-brand-500 focus:ring-4 focus:ring-brand-500/15">
+          <input id="q" placeholder="Cari nama / NIS…" class="w-full rounded-xl border border-slate-200 pl-9 pr-3 py-2.5 text-sm outline-none focus:border-brand-500 focus:ring-4 focus:ring-brand-500/12">
         </div>
-        <select id="kf" class="rounded-xl border border-slate-200 px-3 py-2.5 text-sm outline-none focus:border-brand-500 focus:ring-4 focus:ring-brand-500/15">
+        <select id="kf" class="rounded-xl border border-slate-200 px-3 py-2.5 text-sm outline-none focus:border-brand-500 focus:ring-4 focus:ring-brand-500/12">
           <option value="">Semua kelas</option>
           ${classes.map((k) => `<option value="${U.escapeHtml(k)}">${U.escapeHtml(k)}</option>`).join('')}
         </select>
       </div>
       <div class="flex gap-2">
         <button id="import" class="text-sm bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 px-3.5 py-2 rounded-xl flex items-center gap-1.5"><i data-lucide="upload" class="w-4 h-4"></i>Import Excel/CSV</button>
-        <button id="add" class="text-sm bg-gradient-to-r from-brand-600 to-brand-500 shadow-glow hover:to-brand-600 text-white px-3.5 py-2 rounded-xl flex items-center gap-1.5"><i data-lucide="plus" class="w-4 h-4"></i>Tambah Siswa</button>
+        <button id="add" class="text-sm bg-brand-600 hover:bg-brand-700 shadow-glow active:scale-95 text-white px-3.5 py-2 rounded-xl flex items-center gap-1.5"><i data-lucide="plus" class="w-4 h-4"></i>Tambah Siswa</button>
       </div>
     </div>
     <div id="st-wrap">${U.spinner()}</div>`;
@@ -491,13 +491,13 @@ export async function students(el) {
   const load = async () => {
     const wrap = document.getElementById('st-wrap');
     const { data, count, error } = await db.studentsPage({ page, size, q, kelas });
-    if (error) { wrap.innerHTML = `<p class="text-rose-500 text-sm">${U.escapeHtml(error.message)}</p>`; return; }
+    if (error) { wrap.innerHTML = `<p class="text-coral-600 text-sm">${U.escapeHtml(error.message)}</p>`; return; }
     if (!count) { wrap.innerHTML = U.emptyState('Tidak ada siswa'); return; }
     const rowsById = Object.fromEntries((data || []).map((r) => [r.id, r]));
     const from = page * size + 1, to = Math.min(count, page * size + size), pages = Math.ceil(count / size);
     wrap.innerHTML = U.card(`
       <div class="overflow-x-auto"><table class="w-full text-sm min-w-[420px]">
-        <thead class="text-left text-slate-400 border-b border-slate-200/70">
+        <thead class="text-left text-slate-400 border-b border-slate-200">
           <tr><th class="p-4 font-medium">Nama</th><th class="p-4 font-medium">Kelas</th><th class="p-4 font-medium">NIS</th><th class="p-4"></th></tr>
         </thead>
         <tbody>${(data || []).map((s) => `
@@ -507,7 +507,7 @@ export async function students(el) {
             <td class="p-4 text-slate-500">${U.escapeHtml(s.nis || '-')}</td>
             <td class="p-4 text-right whitespace-nowrap">
               <button data-edit="${s.id}" class="text-slate-400 hover:text-brand-600 p-1.5"><i data-lucide="pencil" class="w-4 h-4"></i></button>
-              <button data-del="${s.id}" class="text-slate-400 hover:text-rose-600 p-1.5"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+              <button data-del="${s.id}" class="text-slate-400 hover:text-coral-700 p-1.5"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
             </td>
           </tr>`).join('')}</tbody>
       </table></div>`) + `
@@ -546,7 +546,7 @@ async function studentForm(student, refresh) {
       <input id="s-nama" class="swal2-input" placeholder="Nama lengkap" value="${U.escapeHtml(student?.nama || '')}">
       <input id="s-kelas" class="swal2-input" placeholder="Kelas (mis. XI IPA 1)" value="${U.escapeHtml(student?.kelas || '')}">
       <input id="s-nis" class="swal2-input" placeholder="NIS (opsional)" value="${U.escapeHtml(student?.nis || '')}">`,
-    showCancelButton: true, confirmButtonText: 'Simpan', cancelButtonText: 'Batal', confirmButtonColor: '#2563eb', focusConfirm: false,
+    showCancelButton: true, confirmButtonText: 'Simpan', cancelButtonText: 'Batal', confirmButtonColor: '#0F766E', focusConfirm: false,
     preConfirm: () => {
       const nama = document.getElementById('s-nama').value.trim();
       const kelas = document.getElementById('s-kelas').value.trim();
@@ -640,7 +640,7 @@ function importEquipment(labs) {
 // ---- Pengaturan (Kontak WhatsApp) ------------------------------------------
 export async function settings(el) {
   const [{ data: num }, { data: nm }] = await Promise.all([db.getSetting('wa_number'), db.getSetting('wa_nama')]);
-  const inp = 'mt-1.5 w-full rounded-xl border border-slate-200 px-3.5 py-2.5 text-sm outline-none transition focus:border-brand-500 focus:ring-4 focus:ring-brand-500/15';
+  const inp = 'mt-2 w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-[14px] text-slate-800 outline-none transition focus:border-brand-500 focus:ring-4 focus:ring-brand-500/12 placeholder:text-slate-300';
   el.innerHTML = U.card(`
     <form id="cfg" class="p-6 space-y-5 max-w-lg">
       <div class="flex items-center gap-3">
@@ -651,16 +651,16 @@ export async function settings(el) {
         </div>
       </div>
       <div>
-        <label class="text-xs font-semibold text-slate-500">Nama Contact Person</label>
+        <label class="text-[12.5px] font-semibold text-slate-600">Nama Contact Person</label>
         <input name="nama" class="${inp}" placeholder="mis. Pak Andi (Laboran)" value="${U.escapeHtml(nm?.value || '')}">
       </div>
       <div>
-        <label class="text-xs font-semibold text-slate-500">Nomor WhatsApp</label>
+        <label class="text-[12.5px] font-semibold text-slate-600">Nomor WhatsApp</label>
         <input name="number" class="${inp}" placeholder="mis. 081234567890" value="${U.escapeHtml(num?.value || '')}">
         <p class="text-[11px] text-slate-400 mt-1">Boleh format 08xx atau 62xx — otomatis disesuaikan. Kosongkan untuk menyembunyikan tombol lapor.</p>
       </div>
       <div class="flex justify-end">
-        <button type="submit" class="px-5 py-2.5 rounded-xl text-sm font-medium text-white bg-gradient-to-r from-brand-600 to-brand-500 shadow-glow hover:to-brand-600 flex items-center gap-2"><i data-lucide="save" class="w-4 h-4"></i>Simpan</button>
+        <button type="submit" class="px-5 py-2.5 rounded-xl text-sm font-medium text-white bg-brand-600 hover:bg-brand-700 shadow-glow active:scale-95 flex items-center gap-2"><i data-lucide="save" class="w-4 h-4"></i>Simpan</button>
       </div>
     </form>`);
   U.icons();

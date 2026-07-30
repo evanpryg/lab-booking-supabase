@@ -19,7 +19,7 @@ export async function dashboard(el) {
     ${U.heroBanner({
       name: S.guru.nama,
       subtitle: 'Ajukan peminjaman laboratorium dan pantau statusnya di sini.',
-      actionHtml: `<a href="#/guru/new" class="bg-white/95 hover:bg-white text-brand-700 font-semibold text-sm px-4 py-2.5 rounded-xl flex items-center gap-2 shadow-sm transition"><i data-lucide="plus" class="w-4 h-4"></i>Buat Booking</a>`,
+      actionHtml: `<a href="#/guru/new" class="bg-white hover:bg-brand-50 text-brand-700 font-semibold text-[13.5px] px-5 py-3 rounded-xl flex items-center gap-2 shadow-float active:scale-95 transition-all shrink-0"><i data-lucide="plus" class="w-4 h-4"></i>Buat Booking</a>`,
     })}
     <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
       ${U.statTile('calendar-check', 'Total Booking', rows.length, 'blue')}
@@ -28,8 +28,8 @@ export async function dashboard(el) {
       ${U.statTile('flag', 'Selesai', count('selesai'), 'violet')}
     </div>
     <div class="flex items-center justify-between mb-3">
-      <h2 class="font-semibold text-slate-800 font-display">Booking Terbaru</h2>
-      <a href="#/guru/new" class="text-sm bg-gradient-to-r from-brand-600 to-brand-500 shadow-glow hover:to-brand-600 text-white px-3.5 py-2 rounded-xl flex items-center gap-1.5">
+      <h2 class="font-semibold text-slate-900 font-display text-[17px]">Booking Terbaru</h2>
+      <a href="#/guru/new" class="text-sm bg-brand-600 hover:bg-brand-700 shadow-glow active:scale-95 text-white px-3.5 py-2 rounded-xl flex items-center gap-1.5">
         <i data-lucide="plus" class="w-4 h-4"></i>Buat Booking</a>
     </div>
     <div id="list"></div>`;
@@ -43,19 +43,19 @@ export async function newBooking(el) {
   const available = (labs || []).filter((l) => l.status === 'tersedia');
   const classes = (kelasRows || []).map((r) => r.kelas);
 
-  const inp = 'mt-1.5 w-full rounded-xl border border-slate-200 px-3.5 py-2.5 text-sm outline-none transition focus:border-brand-500 focus:ring-4 focus:ring-brand-500/15';
+  const inp = 'mt-2 w-full rounded-xl border border-slate-200 bg-white px-4 py-2.5 text-[14px] text-slate-800 outline-none transition focus:border-brand-500 focus:ring-4 focus:ring-brand-500/12 placeholder:text-slate-300';
 
   el.innerHTML = U.card(`
     <form id="bk" class="p-5 sm:p-6 space-y-5">
       <div>
-        <label class="text-xs font-semibold text-slate-500 mb-1.5 block">Jenis Peminjaman</label>
-        <div class="inline-flex bg-slate-100 rounded-xl p-1 gap-1">
-          <button type="button" data-mode="lab" class="mode-btn px-4 py-2 rounded-lg text-sm font-semibold transition">Pakai Lab</button>
-          <button type="button" data-mode="alat" class="mode-btn px-4 py-2 rounded-lg text-sm font-semibold transition">Pinjam Alat Saja</button>
+        <label class="text-[12.5px] font-semibold text-slate-600 mb-2 block">Jenis Peminjaman</label>
+        <div class="inline-flex bg-slate-100 rounded-2xl p-1.5 gap-1 w-full sm:w-auto">
+          <button type="button" data-mode="lab" class="mode-btn flex-1 sm:flex-none px-5 py-2.5 rounded-xl text-[13.5px] font-semibold transition-all">Pakai Lab</button>
+          <button type="button" data-mode="alat" class="mode-btn flex-1 sm:flex-none px-5 py-2.5 rounded-xl text-[13.5px] font-semibold transition-all">Pinjam Alat Saja</button>
         </div>
       </div>
       <div id="lab-field">
-        <label class="text-xs font-semibold text-slate-500">Laboratorium <span id="lab-hint" class="text-slate-300 font-normal"></span></label>
+        <label class="text-[12.5px] font-semibold text-slate-600">Laboratorium <span id="lab-hint" class="text-slate-300 font-normal"></span></label>
         <select name="lab_id" required class="${inp}">
           <option value="">— Pilih lab —</option>
           ${available.map((l) => `<option value="${l.id}" data-kap="${l.kapasitas}">${U.escapeHtml(l.nama)} (kap. ${l.kapasitas})</option>`).join('')}
@@ -63,17 +63,17 @@ export async function newBooking(el) {
         ${available.length < (labs || []).length ? `<p class="text-[11px] text-amber-600 mt-1">Sebagian lab disembunyikan (maintenance/ditutup).</p>` : ''}
       </div>
       <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
-        <div><label class="text-xs font-semibold text-slate-500">Tanggal</label>
+        <div><label class="text-[12.5px] font-semibold text-slate-600">Tanggal</label>
           <input name="tanggal" type="date" required min="${U.todayISO()}" class="${inp}"></div>
-        <div><label class="text-xs font-semibold text-slate-500">Jam Mulai</label>
+        <div><label class="text-[12.5px] font-semibold text-slate-600">Jam Mulai</label>
           <input name="jam_mulai" type="time" required class="${inp}"></div>
-        <div><label class="text-xs font-semibold text-slate-500">Jam Selesai</label>
+        <div><label class="text-[12.5px] font-semibold text-slate-600">Jam Selesai</label>
           <input name="jam_selesai" type="time" required class="${inp}"></div>
       </div>
       <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <div id="kelas-field"><label class="text-xs font-semibold text-slate-500">Kelas / Rombel <span class="text-slate-300">(opsional)</span></label>
+        <div id="kelas-field"><label class="text-[12.5px] font-semibold text-slate-600">Kelas / Rombel <span class="text-slate-300">(opsional)</span></label>
           <input name="kelas" type="text" class="${inp}" placeholder="mis. XI IPA 1"></div>
-        <div><label class="text-xs font-semibold text-slate-500">Keperluan <span class="text-rose-400">*</span></label>
+        <div><label class="text-[12.5px] font-semibold text-slate-600">Keperluan <span class="text-coral-500">*</span></label>
           <input name="keperluan" type="text" required class="${inp}" placeholder="mis. Praktikum jaringan"></div>
       </div>
 
@@ -84,13 +84,13 @@ export async function newBooking(el) {
           <span class="text-xs font-semibold px-2.5 py-1 rounded-full bg-brand-50 text-brand-700"><span id="pcount">0</span> peserta</span>
         </div>
         <div class="grid grid-cols-1 sm:grid-cols-3 gap-2">
-          <select id="kelas-filter" class="rounded-xl border border-slate-200 px-3 py-2.5 text-sm outline-none focus:border-brand-500 focus:ring-4 focus:ring-brand-500/15">
+          <select id="kelas-filter" class="rounded-xl border border-slate-200 px-3 py-2.5 text-sm outline-none focus:border-brand-500 focus:ring-4 focus:ring-brand-500/12">
             <option value="">Semua kelas</option>
             ${classes.map((k) => `<option value="${U.escapeHtml(k)}">${U.escapeHtml(k)}</option>`).join('')}
           </select>
           <div class="relative sm:col-span-2">
             <i data-lucide="search" class="w-4 h-4 text-slate-400 absolute left-3 top-3"></i>
-            <input id="siswa-search" type="text" autocomplete="off" placeholder="Cari nama siswa…" class="w-full rounded-xl border border-slate-200 pl-9 pr-3 py-2.5 text-sm outline-none focus:border-brand-500 focus:ring-4 focus:ring-brand-500/15">
+            <input id="siswa-search" type="text" autocomplete="off" placeholder="Cari nama siswa…" class="w-full rounded-xl border border-slate-200 pl-9 pr-3 py-2.5 text-sm outline-none focus:border-brand-500 focus:ring-4 focus:ring-brand-500/12">
           </div>
         </div>
         <p class="text-[11px] text-slate-400 mt-1.5">Filter kelas hanya untuk mempermudah pencarian — Anda tetap bisa memilih siswa lintas kelas.</p>
@@ -109,7 +109,7 @@ export async function newBooking(el) {
       <div id="hint" class="hidden text-sm rounded-xl px-3.5 py-2.5"></div>
       <div class="flex justify-end gap-2 pt-1">
         <button type="button" id="btn-cek" class="px-4 py-2.5 rounded-xl text-sm font-medium text-brand-700 bg-brand-50 hover:bg-brand-100">Cek Ketersediaan</button>
-        <button type="submit" class="px-5 py-2.5 rounded-xl text-sm font-medium text-white bg-gradient-to-r from-brand-600 to-brand-500 shadow-glow hover:to-brand-600 flex items-center gap-2">
+        <button type="submit" class="px-5 py-2.5 rounded-xl text-sm font-medium text-white bg-brand-600 hover:bg-brand-700 shadow-glow active:scale-95 flex items-center gap-2">
           <i data-lucide="send" class="w-4 h-4"></i>Ajukan Booking</button>
       </div>
     </form>`);
@@ -140,7 +140,7 @@ export async function newBooking(el) {
     const alat = m === 'alat';
     form.querySelectorAll('.mode-btn').forEach((b) => {
       const on = b.dataset.mode === m;
-      b.className = `mode-btn px-4 py-2 rounded-lg text-sm font-semibold transition ${on ? 'bg-white text-brand-700 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`;
+      b.className = `mode-btn flex-1 sm:flex-none px-5 py-2.5 rounded-xl text-[13.5px] font-semibold transition-all ${on ? 'bg-white text-brand-700 shadow-soft' : 'text-slate-500 hover:text-slate-700'}`;
     });
     labField.classList.toggle('hidden', alat);   // mode alat: tak perlu pilih lab
     form.lab_id.required = !alat;
@@ -148,7 +148,7 @@ export async function newBooking(el) {
     siswaSection.classList.toggle('hidden', alat);
     document.getElementById('btn-cek').classList.toggle('hidden', alat);
     alatOpsional.textContent = alat ? '(wajib pilih ≥1)' : '(opsional)';
-    alatOpsional.className = alat ? 'text-rose-400 font-normal' : 'text-slate-300 font-normal';
+    alatOpsional.className = alat ? 'text-coral-500 font-normal' : 'text-slate-300 font-normal';
   };
   form.querySelectorAll('.mode-btn').forEach((b) => b.addEventListener('click', async () => {
     setMode(b.dataset.mode);
@@ -176,7 +176,7 @@ export async function newBooking(el) {
             <input type="checkbox" data-eqid="${e.id}" ${habis ? 'disabled' : ''} class="equip-check rounded text-brand-600 mt-0.5 shrink-0 disabled:opacity-40">
             <span class="min-w-0">
               <span class="block font-medium break-words leading-snug ${habis ? 'text-slate-400 line-through' : 'text-slate-700'}">${U.escapeHtml(e.nama)}</span>
-              <span class="block text-[11px] mt-0.5 ${habis ? 'text-rose-500' : 'text-slate-400'}">
+              <span class="block text-[11px] mt-0.5 ${habis ? 'text-coral-600' : 'text-slate-400'}">
                 ${showLab && e.laboratories?.nama ? U.escapeHtml(e.laboratories.nama) + ' · ' : ''}${habis
                   ? 'Tidak ada unit siap pakai'
                   : `siap pakai <b class="text-slate-600">${k.siap}</b> dari ${k.total}${catatan ? ` · ${catatan}` : ''}`}
@@ -278,7 +278,7 @@ export async function newBooking(el) {
     const terpakai = (data || []).filter((b) => b.lab_id === f.lab_id && b.tanggal === f.tanggal && b.jam_mulai < f.jam_selesai && b.jam_selesai > f.jam_mulai)
       .reduce((s, b) => s + b.jumlah_peserta, 0);
     const sisa = kap - terpakai;
-    hint.className = `text-sm rounded-xl px-3.5 py-2.5 ${sisa > 0 ? 'bg-emerald-50 text-emerald-700' : 'bg-rose-50 text-rose-700'}`;
+    hint.className = `text-sm rounded-xl px-3.5 py-2.5 ${sisa > 0 ? 'bg-emerald-50 text-emerald-700' : 'bg-coral-50 text-rose-700'}`;
     hint.innerHTML = sisa > 0
       ? `Tersedia <b>${sisa}</b> kursi pada rentang waktu itu (terpakai ${terpakai}/${kap}).`
       : `Penuh — sudah ${terpakai}/${kap} peserta pada rentang waktu itu.`;
@@ -341,7 +341,7 @@ export async function showStudents(bookingId) {
       ? `<div class="text-left max-h-72 overflow-y-auto text-sm divide-y divide-slate-100">${list
           .map((s) => `<div class="py-2 flex justify-between"><span>${U.escapeHtml(s.nama)}</span><span class="text-slate-400">${U.escapeHtml(s.kelas)}</span></div>`).join('')}</div>`
       : '<p class="text-slate-400 text-sm">Tidak ada data siswa untuk booking ini.</p>',
-    confirmButtonColor: '#2563eb',
+    confirmButtonColor: '#0F766E',
   });
 }
 
@@ -349,21 +349,21 @@ export async function showStudents(bookingId) {
 function paintBookingCards(container, rows, allowCancel) {
   if (!rows.length) { container.innerHTML = U.emptyState('Belum ada booking'); return; }
   container.innerHTML = `<div class="space-y-3">${rows.map((b) => `
-    <div class="bg-white rounded-2xl border border-slate-200/70 shadow-card p-4 flex items-start gap-4">
-      <div class="w-11 h-11 rounded-2xl bg-gradient-to-br from-brand-500 to-brand-600 text-white shadow-glow grid place-items-center shrink-0"><i data-lucide="flask-conical" class="w-5 h-5"></i></div>
+    <div class="bg-white rounded-2xl border border-slate-200 shadow-card p-4 flex items-start gap-4">
+      <div class="w-11 h-11 rounded-2xl bg-brand-50 text-brand-600 grid place-items-center shrink-0"><i data-lucide="flask-conical" class="w-5 h-5"></i></div>
       <div class="flex-1 min-w-0">
         <div class="flex items-center gap-2 flex-wrap">
-          <p class="font-semibold text-slate-800">${U.bookingTitle(b)}</p>
+          <p class="font-semibold text-slate-900 font-display text-[15.5px]">${U.bookingTitle(b)}</p>
           ${U.bookingBadge(b.status)}${U.tipeTag(b)}
         </div>
         <p class="text-sm text-slate-500 mt-0.5">${U.fmtDate(b.tanggal)} · ${U.fmtTime(b.jam_mulai)}–${U.fmtTime(b.jam_selesai)} · ${U.pesertaLabel(b)}${b.kelas ? ' · ' + U.escapeHtml(b.kelas) : ''}</p>
         ${b.keperluan ? `<p class="text-sm text-slate-400 mt-0.5">${U.escapeHtml(b.keperluan)}</p>` : ''}
         ${U.equipLine(b.booking_equipment)}
-        ${b.status === 'ditolak' && b.alasan_penolakan ? `<p class="text-sm text-rose-500 mt-1">Alasan ditolak: ${U.escapeHtml(b.alasan_penolakan)}</p>` : ''}
+        ${b.status === 'ditolak' && b.alasan_penolakan ? `<p class="text-sm text-coral-600 mt-1">Alasan ditolak: ${U.escapeHtml(b.alasan_penolakan)}</p>` : ''}
         <div class="flex items-center gap-3 mt-2">
           ${b.tipe !== 'alat' ? `<button data-siswa="${b.id}" class="text-xs font-medium text-brand-600 hover:underline flex items-center gap-1"><i data-lucide="users" class="w-3.5 h-3.5"></i>Lihat siswa</button>` : ''}
           ${allowCancel && ['menunggu', 'disetujui'].includes(b.status)
-            ? `<button data-cancel="${b.id}" class="text-xs font-medium text-rose-600 hover:underline">Batalkan</button>` : ''}
+            ? `<button data-cancel="${b.id}" class="text-xs font-medium text-coral-700 hover:underline">Batalkan</button>` : ''}
         </div>
       </div>
     </div>`).join('')}</div>`;

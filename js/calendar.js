@@ -2,7 +2,7 @@
 import { db } from './supabase.js';
 import * as U from './ui.js';
 
-const COLORS = { disetujui: '#2563eb', selesai: '#64748b' };
+const COLORS = { disetujui: '#0F766E', selesai: '#A9A199' };
 
 export async function renderCalendar(el) {
   el.innerHTML = U.card(`<div class="p-3 sm:p-4 overflow-x-auto"><div id="fc" class="min-w-[300px]"></div></div>`);
@@ -13,8 +13,8 @@ export async function renderCalendar(el) {
     title: `${b.laboratories?.kode || ''} · ${b.gurus?.nama?.split(',')[0] || ''} (${b.tipe === 'alat' ? 'alat' : b.jumlah_peserta})`,
     start: `${b.tanggal}T${b.jam_mulai}`,
     end: `${b.tanggal}T${b.jam_selesai}`,
-    backgroundColor: COLORS[b.status] || '#2563eb',
-    borderColor: COLORS[b.status] || '#2563eb',
+    backgroundColor: COLORS[b.status] || '#0F766E',
+    borderColor: COLORS[b.status] || '#0F766E',
     extendedProps: b,
   }));
 
@@ -25,6 +25,7 @@ export async function renderCalendar(el) {
     locale: 'id',
     height: 'auto',
     expandRows: true,
+    eventDisplay: 'block', // tampil sebagai pil berwarna penuh, bukan titik kecil
     dayMaxEvents: isMobile ? 2 : 3,
     headerToolbar: isMobile
       ? { left: 'prev,next', center: 'title', right: 'today' }
@@ -44,7 +45,7 @@ export async function renderCalendar(el) {
           <p><b>Peserta:</b> ${b.jumlah_peserta}</p>
           <p><b>Kelas:</b> ${U.escapeHtml(b.kelas || '-')}</p>
           <p><b>Keperluan:</b> ${U.escapeHtml(b.keperluan || '-')}</p></div>`,
-        confirmButtonColor: '#2563eb',
+        confirmButtonColor: '#0F766E',
       });
     },
   });
