@@ -5,7 +5,7 @@ import { db } from './supabase.js';
 import * as U from './ui.js';
 import { renderCalendar } from './calendar.js';
 import { showStudents } from './views-guru.js';
-import { exportToExcel, downloadTemplate, pickAndParse, normKeys, chunkInsert } from './excel.js';
+import { exportToExcel, sheetLaporan, sheetRingkasan, downloadTemplate, pickAndParse, normKeys, chunkInsert } from './excel.js';
 
 const Swal = window.Swal;
 const reload = (fn) => fn(document.getElementById('view'));
@@ -108,7 +108,6 @@ export async function bookings(el, status = '', month) {
 //  Dua laporan yang dimaksud sekolah: peminjaman LAB dan peminjaman ALAT/BAHAN.
 //  Tiap laporan punya lembar "Ringkasan" (kop + rekap) dan lembar rinciannya.
 // ----------------------------------------------------------------------------
-const SEKOLAH = 'SMA Progresif Bumi Shalawat';
 const NAMA_HARI = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
 const hariLabel = (d) => {
   if (!d) return '';
@@ -116,23 +115,20 @@ const hariLabel = (d) => {
   return NAMA_HARI[new Date(y, m - 1, day).getDay()];
 };
 const kapital = (s) => (s ? s.charAt(0).toUpperCase() + s.slice(1) : '');
+// Tanggal dikirim sebagai objek Date agar jadi sel tanggal Excel asli.
+const tglExcel = (d) => {
+  if (!d) return '';
+  const [y, m, day] = d.split('-').map(Number);
+  return new Date(y, m - 1, day);
+};
 const alatRingkas = (b) =>
   (b.booking_equipment || [])
     .map((be) => `${be.equipment?.nama || 'Alat'} ×${be.jumlah} ${be.equipment?.satuan || 'pcs'}`)
     .join('; ') || '-';
 
-function kop(judul, status, month, ringkas = []) {
-  return [
-    [judul],
-    [SEKOLAH],
-    [],
-    ['Periode', periodeLabel(month)],
-    ['Filter status', status ? kapital(status) : 'Semua status'],
-    ['Dicetak', cetakLabel()],
-    [],
-    ...ringkas,
-  ];
-}
+/** Baris keterangan di bawah judul laporan. */
+const metaLaporan = (status, month) =>
+  `Periode: ${periodeLabel(month)}   •   Status: ${status ? kapital(status) : 'Semua status'}   •   Dicetak: ${cetakLabel()}`;
 
 /** Kelompokkan array menjadi Map(kunci → array baris). */
 function groupBy(rows, keyFn) {
@@ -145,15 +141,35 @@ function groupBy(rows, keyFn) {
   return m;
 }
 
-// Kolom ditulis eksplisit agar baris judul tetap muncul walau datanya kosong.
-const COLS_LAB = ['No', 'Tanggal', 'Hari', 'Jam Mulai', 'Jam Selesai', 'Durasi (menit)', 'Laboratorium', 'Kode Lab', 'Guru', 'Kelas', 'Jumlah Peserta', 'Keperluan', 'Alat yang Dipakai', 'Status', 'Alasan Penolakan'];
-const COLS_ALAT = ['No', 'Tanggal', 'Hari', 'Jam Mulai', 'Jam Selesai', 'Guru', 'Jenis Peminjaman', 'Laboratorium', 'Nama Alat/Bahan', 'Jumlah Pinjam', 'Satuan', 'Kelas', 'Keperluan', 'Status', 'Alasan Penolakan'];
+// Kolom ditulis eksplisit — [judul, lebar, perataan] — agar baris judul tetap
+// muncul walau datanya kosong, dan lebar kolomnya sudah pas tanpa perlu diatur
+// ulang oleh admin. Perataan: left | center | right | wrap.
+const COLS_LAB = [
+  ['No', 5, 'center'], ['Tanggal', 12, 'date'], ['Hari', 9, 'center'],
+  ['Jam Mulai', 9.5, 'center'], ['Jam Selesai', 10.5, 'center'], ['Durasi (menit)', 9, 'right'],
+  ['Laboratorium', 20, 'left'], ['Kode Lab', 9, 'center'], ['Guru', 26, 'left'],
+  ['Kelas', 12, 'center'], ['Jumlah Peserta', 9, 'right'], ['Keperluan', 30, 'wrap'],
+  ['Alat yang Dipakai', 32, 'wrap'], ['Status', 12, 'center'], ['Alasan Penolakan', 26, 'wrap'],
+];
+const COLS_ALAT = [
+  ['No', 5, 'center'], ['Tanggal', 12, 'date'], ['Hari', 9, 'center'],
+  ['Jam Mulai', 9.5, 'center'], ['Jam Selesai', 10.5, 'center'], ['Guru', 26, 'left'],
+  ['Jenis Peminjaman', 19, 'left'], ['Laboratorium', 18, 'left'], ['Nama Alat/Bahan', 28, 'left'],
+  ['Jumlah Pinjam', 9, 'right'], ['Satuan', 9, 'center'], ['Kelas', 12, 'center'],
+  ['Keperluan', 28, 'wrap'], ['Status', 12, 'center'], ['Alasan Penolakan', 24, 'wrap'],
+];
+const COLS_INVENTARIS = [
+  ['No', 5, 'center'], ['Nama Alat/Bahan', 30, 'left'], ['Kode', 12, 'center'],
+  ['Laboratorium', 20, 'left'], ['Satuan', 10, 'center'], ['Jumlah Total', 11, 'right'],
+  ['Kondisi Baik', 11, 'right'], ['Siap Pakai', 11, 'right'], ['Rusak Ringan', 11, 'right'],
+  ['Rusak Berat', 11, 'right'], ['Hilang', 10, 'right'],
+];
 
 function sheetsLaporanLab(rows, status, month) {
   const src = rows.filter((b) => b.tipe !== 'alat');
   const data = src.map((b, i) => ({
     'No': i + 1,
-    'Tanggal': b.tanggal,
+    'Tanggal': tglExcel(b.tanggal),
     'Hari': hariLabel(b.tanggal),
     'Jam Mulai': U.fmtTime(b.jam_mulai),
     'Jam Selesai': U.fmtTime(b.jam_selesai),
@@ -169,35 +185,45 @@ function sheetsLaporanLab(rows, status, month) {
     'Alasan Penolakan': b.alasan_penolakan || '',
   }));
 
-  const perStatus = groupBy(src, (b) => b.status);
+  const jam = (list) => Math.round((list.reduce((s, b) => s + (durasiMenit(b.jam_mulai, b.jam_selesai) || 0), 0) / 60) * 10) / 10;
   const perLab = groupBy(src, (b) => b.laboratories?.nama || '-');
-  const ringkas = [
-    ['Total booking laboratorium', src.length],
-    ['Total peserta terlayani', src.reduce((s, b) => s + (b.jumlah_peserta || 0), 0)],
-    ['Total durasi pemakaian (jam)', Math.round((src.reduce((s, b) => s + (durasiMenit(b.jam_mulai, b.jam_selesai) || 0), 0) / 60) * 10) / 10],
-    [],
-    ['REKAP PER STATUS'],
-    ['Status', 'Jumlah Booking'],
-    ...[...perStatus.entries()].map(([k, v]) => [kapital(k), v.length]),
-    [],
-    ['REKAP PER LABORATORIUM'],
-    ['Laboratorium', 'Jumlah Booking', 'Total Peserta', 'Total Jam'],
-    ...[...perLab.entries()].map(([k, v]) => [
-      k, v.length,
-      v.reduce((s, b) => s + (b.jumlah_peserta || 0), 0),
-      Math.round((v.reduce((s, b) => s + (durasiMenit(b.jam_mulai, b.jam_selesai) || 0), 0) / 60) * 10) / 10,
-    ]),
-    [],
-    ['REKAP PER GURU'],
-    ['Guru', 'Jumlah Booking'],
-    ...[...groupBy(src, (b) => b.gurus?.nama || '-').entries()]
-      .sort((a, b) => b[1].length - a[1].length)
-      .map(([k, v]) => [k, v.length]),
-  ];
+
+  const ringkasan = sheetRingkasan({
+    name: 'Ringkasan Lab',
+    judul: 'LAPORAN PEMINJAMAN LABORATORIUM',
+    meta: metaLaporan(status, month),
+    angka: [
+      ['Total booking laboratorium', src.length],
+      ['Total peserta terlayani', src.reduce((s, b) => s + (b.jumlah_peserta || 0), 0)],
+      ['Total durasi pemakaian (jam)', jam(src)],
+      ['Rata-rata peserta per booking', src.length ? Math.round((src.reduce((s, b) => s + (b.jumlah_peserta || 0), 0) / src.length) * 10) / 10 : 0],
+    ],
+    blok: [
+      {
+        judul: 'REKAP PER STATUS',
+        headers: ['Status', 'Jumlah Booking'],
+        rows: [...groupBy(src, (b) => b.status).entries()].map(([k, v]) => [kapital(k), v.length]),
+      },
+      {
+        judul: 'REKAP PER LABORATORIUM',
+        headers: ['Laboratorium', 'Jumlah Booking', 'Total Peserta', 'Total Jam'],
+        rows: [...perLab.entries()]
+          .map(([k, v]) => [k, v.length, v.reduce((s, b) => s + (b.jumlah_peserta || 0), 0), jam(v)])
+          .sort((a, b) => b[1] - a[1]),
+      },
+      {
+        judul: 'REKAP PER GURU',
+        headers: ['Guru', 'Jumlah Booking', 'Total Peserta'],
+        rows: [...groupBy(src, (b) => b.gurus?.nama || '-').entries()]
+          .map(([k, v]) => [k, v.length, v.reduce((s, b) => s + (b.jumlah_peserta || 0), 0)])
+          .sort((a, b) => b[1] - a[1]),
+      },
+    ],
+  });
 
   return [
-    { name: 'Ringkasan Lab', aoa: kop('LAPORAN PEMINJAMAN LABORATORIUM', status, month, ringkas), widths: [34, 16, 16, 14] },
-    { name: 'Peminjaman Lab', data, cols: COLS_LAB },
+    ringkasan,
+    sheetLaporan({ name: 'Peminjaman Lab', judul: 'RINCIAN PEMINJAMAN LABORATORIUM', meta: metaLaporan(status, month), cols: COLS_LAB, data }),
   ];
 }
 
@@ -208,7 +234,7 @@ function sheetsLaporanAlat(rows, status, month) {
   });
   const data = src.map(({ b, be }, i) => ({
     'No': i + 1,
-    'Tanggal': b.tanggal,
+    'Tanggal': tglExcel(b.tanggal),
     'Hari': hariLabel(b.tanggal),
     'Jam Mulai': U.fmtTime(b.jam_mulai),
     'Jam Selesai': U.fmtTime(b.jam_selesai),
@@ -226,31 +252,44 @@ function sheetsLaporanAlat(rows, status, month) {
 
   const perAlat = groupBy(src, (x) => x.be.equipment?.nama || '-');
   const perGuru = groupBy(src, (x) => x.b.guru_id || '-');
-  const ringkas = [
-    ['Total transaksi peminjaman alat', src.length],
-    ['Jenis alat/bahan yang dipinjam', perAlat.size],
-    ['Total unit dipinjam', src.reduce((s, x) => s + (x.be.jumlah || 0), 0)],
-    [],
-    ['REKAP PER ALAT / BAHAN'],
-    ['Nama Alat/Bahan', 'Satuan', 'Total Unit Dipinjam', 'Frekuensi Dipinjam'],
-    ...[...perAlat.entries()]
-      .map(([k, v]) => [k, v[0].be.equipment?.satuan || 'pcs', v.reduce((s, x) => s + (x.be.jumlah || 0), 0), v.length])
-      .sort((a, b) => b[2] - a[2]),
-    [],
-    ['REKAP PER GURU'],
-    ['Guru', 'Frekuensi Peminjaman', 'Total Unit'],
-    ...[...perGuru.values()]
-      .map((v) => [v[0].b.gurus?.nama || '-', v.length, v.reduce((s, x) => s + (x.be.jumlah || 0), 0)])
-      .sort((a, b) => b[1] - a[1]),
-    [],
-    ['REKAP PER STATUS'],
-    ['Status', 'Jumlah Transaksi'],
-    ...[...groupBy(src, (x) => x.b.status).entries()].map(([k, v]) => [kapital(k), v.length]),
-  ];
+  const unit = (list) => list.reduce((s, x) => s + (x.be.jumlah || 0), 0);
+
+  const ringkasan = sheetRingkasan({
+    name: 'Ringkasan Alat',
+    judul: 'LAPORAN PEMINJAMAN ALAT & BAHAN',
+    meta: metaLaporan(status, month),
+    angka: [
+      ['Total transaksi peminjaman alat', src.length],
+      ['Jenis alat/bahan yang dipinjam', perAlat.size],
+      ['Total unit dipinjam', unit(src)],
+      ['Jumlah guru peminjam', perGuru.size],
+    ],
+    blok: [
+      {
+        judul: 'REKAP PER ALAT / BAHAN',
+        headers: ['Nama Alat/Bahan', 'Satuan', 'Total Unit Dipinjam', 'Frekuensi Dipinjam'],
+        rows: [...perAlat.entries()]
+          .map(([k, v]) => [k, v[0].be.equipment?.satuan || 'pcs', unit(v), v.length])
+          .sort((a, b) => b[2] - a[2]),
+      },
+      {
+        judul: 'REKAP PER GURU',
+        headers: ['Guru', 'Frekuensi Peminjaman', 'Total Unit'],
+        rows: [...perGuru.values()]
+          .map((v) => [v[0].b.gurus?.nama || '-', v.length, unit(v)])
+          .sort((a, b) => b[1] - a[1]),
+      },
+      {
+        judul: 'REKAP PER STATUS',
+        headers: ['Status', 'Jumlah Transaksi', 'Total Unit'],
+        rows: [...groupBy(src, (x) => x.b.status).entries()].map(([k, v]) => [kapital(k), v.length, unit(v)]),
+      },
+    ],
+  });
 
   return [
-    { name: 'Ringkasan Alat', aoa: kop('LAPORAN PEMINJAMAN ALAT & BAHAN', status, month, ringkas), widths: [34, 16, 20, 20] },
-    { name: 'Peminjaman Alat', data, cols: COLS_ALAT },
+    ringkasan,
+    sheetLaporan({ name: 'Peminjaman Alat', judul: 'RINCIAN PEMINJAMAN ALAT & BAHAN', meta: metaLaporan(status, month), cols: COLS_ALAT, data }),
   ];
 }
 
@@ -284,12 +323,14 @@ async function exportLaporan(status, month) {
   const rows = (data || []).slice().sort((a, b) =>
     a.tanggal === b.tanggal ? String(a.jam_mulai).localeCompare(String(b.jam_mulai)) : a.tanggal.localeCompare(b.tanggal));
 
+  const adaLab = rows.some((b) => b.tipe !== 'alat');
+  const adaAlat = rows.some((b) => (b.booking_equipment || []).length);
+  const adaIsi = { lab: adaLab, alat: adaAlat, both: adaLab || adaAlat }[jenis];
+  if (!adaIsi) { Swal.close(); return U.toast('info', 'Tidak ada data pada periode & status tersebut.'); }
+
   const sheets = [];
   if (jenis === 'lab' || jenis === 'both') sheets.push(...sheetsLaporanLab(rows, status, month));
   if (jenis === 'alat' || jenis === 'both') sheets.push(...sheetsLaporanAlat(rows, status, month));
-
-  const isiData = sheets.some((s) => s.data?.length);
-  if (!isiData) { Swal.close(); return U.toast('info', 'Tidak ada data pada periode & status tersebut.'); }
 
   const nama = { lab: 'Laporan_Peminjaman_Lab', alat: 'Laporan_Peminjaman_Alat', both: 'Laporan_Peminjaman_Lab_dan_Alat' }[jenis];
   exportToExcel(sheets, `${nama}_${month || 'semua-periode'}.xlsx`);
@@ -529,16 +570,40 @@ export async function equipment(el) {
   el.querySelector('#import').addEventListener('click', () => importEquipment(labs));
   el.querySelector('#export-equip').addEventListener('click', () => {
     if (!eq?.length) return U.toast('info', 'Tidak ada data alat.');
-    const data = eq.map((e) => {
+    const data = eq.map((e, i) => {
       const s = U.stok(e);
       return {
-        'Nama Alat/Bahan': e.nama, 'Kode': e.kode || '-',
+        'No': i + 1, 'Nama Alat/Bahan': e.nama, 'Kode': e.kode || '-',
         'Laboratorium': e.laboratories?.nama || '-', 'Satuan': e.satuan || 'pcs',
         'Jumlah Total': s.total, 'Kondisi Baik': s.baik, 'Siap Pakai': s.siap,
         'Rusak Ringan': s.rr, 'Rusak Berat': s.rb, 'Hilang': s.hl,
       };
     });
-    exportToExcel([{ name: 'Inventaris Alat Bahan', data }], `Inventaris_Alat_${U.todayISO()}.xlsx`);
+    const meta = `Per ${new Date().toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}   •   ${eq.length} jenis alat/bahan`;
+    const perLab = groupBy(eq, (e) => e.laboratories?.nama || '-');
+    const jml = (list, f) => list.reduce((s, e) => s + f(U.stok(e)), 0);
+    exportToExcel([
+      sheetRingkasan({
+        name: 'Ringkasan Inventaris',
+        judul: 'LAPORAN INVENTARIS ALAT & BAHAN',
+        meta,
+        angka: [
+          ['Jenis alat/bahan terdaftar', eq.length],
+          ['Total unit dimiliki', jml(eq, (s) => s.total)],
+          ['Unit kondisi baik', jml(eq, (s) => s.baik)],
+          ['Unit siap pakai', jml(eq, (s) => s.siap)],
+          ['Unit rusak / hilang', jml(eq, (s) => s.rr + s.rb + s.hl)],
+        ],
+        blok: [{
+          judul: 'REKAP PER LABORATORIUM',
+          headers: ['Laboratorium', 'Jenis Alat', 'Total Unit', 'Siap Pakai'],
+          rows: [...perLab.entries()]
+            .map(([k, v]) => [k, v.length, jml(v, (s) => s.total), jml(v, (s) => s.siap)])
+            .sort((a, b) => b[2] - a[2]),
+        }],
+      }),
+      sheetLaporan({ name: 'Inventaris Alat', judul: 'RINCIAN INVENTARIS ALAT & BAHAN', meta, cols: COLS_INVENTARIS, data }),
+    ], `Inventaris_Alat_${U.todayISO()}.xlsx`);
     U.toast('success', 'Laporan inventaris berhasil diunduh!');
   });
   el.querySelectorAll('[data-hist]').forEach((b) => b.addEventListener('click', () => equipHistory(eq.find((x) => x.id === b.dataset.hist))));

@@ -37,12 +37,25 @@ Buka **Manajemen Booking** → atur filter **status** dan **bulan** → klik **E
 - **Laporan Peminjaman Alat & Bahan** — satu baris per alat: jumlah, satuan, peminjam, keperluan, status.
 - **Kedua laporan** dalam satu berkas.
 
-Tiap laporan punya lembar **Ringkasan** (kop sekolah, periode, tanggal cetak) berisi rekap per status,
-per laboratorium, per guru, dan per alat. Halaman **Alat & Bahan** juga punya **Ekspor Inventaris**
-untuk rekap stok dan kondisi alat saat ini.
+Tiap laporan terdiri dari dua lembar:
+
+- **Ringkasan** — kop sekolah, periode & tanggal cetak, angka kunci, rekap per status / laboratorium /
+  guru / alat, dan kolom tanda tangan siap cetak.
+- **Rincian** — satu baris per transaksi, siap difilter dan diurutkan.
+
+Berkasnya sudah berformat rapi: kop berwarna melebar di atas tabel, judul kolom teal, baris belang,
+garis tabel, lebar kolom yang sudah pas, filter otomatis di baris judul, kolom angka rata kanan, dan
+kolom **Status** berwarna sesuai keadaan (hijau = selesai/disetujui, kuning = menunggu, merah = ditolak).
+Kolom **Tanggal** ditulis sebagai sel tanggal Excel asli berformat `dd/mm/yyyy`, jadi bisa diurutkan
+dan difilter sebagai tanggal — bukan sekadar teks.
+
+Halaman **Alat & Bahan** juga punya **Ekspor Inventaris** untuk rekap stok dan kondisi alat saat ini,
+dengan format yang sama.
 
 ## Teknologi
 - Frontend: HTML, TailwindCSS (Play CDN), JavaScript (ES Modules) — tanpa build step.
+- Excel: `xlsx-js-style` (fork SheetJS + gaya sel) — dipakai untuk membaca berkas import
+  sekaligus menulis laporan berformat.
 - Backend: Supabase (PostgreSQL, PostgREST, Auth, Row Level Security).
 - Hosting: GitHub Pages.
 
@@ -80,7 +93,7 @@ js/
   supabase.js         # klien + lapisan data
   session.js          # status sesi (admin/guru)
   ui.js               # helper UI, badge, layout
-  excel.js            # ekspor laporan, template import, pembaca berkas (SheetJS)
+  excel.js            # palet & perakit lembar Excel: laporan berformat, template, pembaca import
   app.js              # router + autentikasi + halaman login
   views-admin.js      # halaman admin
   views-guru.js       # halaman guru

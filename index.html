@@ -86,8 +86,10 @@
   <!-- Lucide icons -->
   <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
 
-  <!-- SheetJS — baca/parse Excel (.xlsx) & CSV untuk import data -->
-  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <!-- xlsx-js-style — fork SheetJS 0.18.5 + gaya sel.
+       Dipakai dua arah: baca berkas import (.xlsx/.csv) dan tulis laporan
+       berformat (warna, garis, kolom melebur). API bacanya sama dengan SheetJS. -->
+  <script src="https://cdn.jsdelivr.net/npm/xlsx-js-style@1.2.0/dist/xlsx.bundle.js"></script>
 
   <style>
     :root {
