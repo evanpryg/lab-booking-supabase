@@ -139,10 +139,10 @@ export const tipeTag = (b) =>
 export const equipLine = (list) => {
   if (!list || !list.length) return '';
   const txt = list
-    .map((be) => `${escapeHtml(be.equipment?.nama || 'Alat')}<span class="text-slate-400 font-normal"> ×${be.jumlah}</span>`)
+    .map((be) => `${escapeHtml(be.equipment?.nama || 'Alat')}<span class="text-slate-400 font-normal"> ×${be.jumlah} ${escapeHtml(be.equipment?.satuan || 'pcs')}</span>`)
     .join('<span class="text-slate-300"> · </span>');
   return `<p class="text-[12.5px] text-slate-600 font-medium mt-2 flex items-start gap-1.5">
-    <i data-lucide="wrench" class="w-3.5 h-3.5 text-brand-500 mt-[3px] shrink-0"></i><span>${txt}</span></p>`;
+    <i data-lucide="package" class="w-3.5 h-3.5 text-brand-500 mt-[3px] shrink-0"></i><span>${txt}</span></p>`;
 };
 
 // ---- Loading & empty -------------------------------------------------------
@@ -231,7 +231,7 @@ const NAV = {
     ['#/admin/bookings', 'calendar-check', 'Booking'],
     ['#/admin/calendar', 'calendar-days', 'Kalender'],
     ['#/admin/labs', 'flask-conical', 'Laboratorium'],
-    ['#/admin/equipment', 'wrench', 'Alat'],
+    ['#/admin/equipment', 'package', 'Alat & Bahan'],
     ['#/admin/students', 'graduation-cap', 'Siswa'],
     ['#/admin/gurus', 'users', 'Guru'],
     ['#/admin/settings', 'settings', 'Pengaturan'],
@@ -259,11 +259,9 @@ const navItems = (role, active) =>
 
 const brandMark = (role, compact = false) => `
   <div class="flex items-center gap-3 ${compact ? '' : 'px-1.5'}">
-    <div class="w-10 h-10 rounded-2xl bg-brand-600 grid place-items-center text-white shadow-glow shrink-0">
-      <i data-lucide="flask-conical" class="w-[19px] h-[19px]"></i>
-    </div>
+    <img src="img/logo-smasif.png" alt="Logo SMASIF" class="w-10 h-10 rounded-xl object-contain shrink-0">
     <div class="min-w-0">
-      <p class="font-semibold text-slate-900 leading-tight font-display text-[15px]">Lab Sekolah</p>
+      <p class="font-semibold text-slate-900 leading-tight font-display text-[14px]">SMA Progresif</p>
       <p class="text-[11px] text-slate-400 leading-tight mt-0.5">${role === 'admin' ? 'Panel Admin' : 'Panel Guru'}</p>
     </div>
   </div>`;

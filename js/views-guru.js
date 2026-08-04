@@ -100,10 +100,20 @@ export async function newBooking(el) {
         <p id="peserta-manual-note" class="text-[11px] text-slate-400 mt-1 hidden">Belum ada data siswa dipilih — isi jumlah peserta manual.</p>
       </div>
 
-      <!-- ============ ALAT ============ -->
+      <!-- ============ ALAT & BAHAN ============ -->
       <div class="rounded-2xl border border-slate-200 p-4">
-        <label class="text-sm font-semibold text-slate-700 flex items-center gap-2 mb-3"><i data-lucide="wrench" class="w-4 h-4 text-brand-600"></i>Alat yang dipinjam <span id="alat-opsional" class="text-slate-300 font-normal">(opsional)</span></label>
-        <div id="equip" class="space-y-2"><p class="text-sm text-slate-400">Pilih laboratorium dulu.</p></div>
+        <label class="text-sm font-semibold text-slate-700 flex items-center gap-2 mb-3"><i data-lucide="package" class="w-4 h-4 text-brand-600"></i>Alat & Bahan yang Dipinjam <span id="alat-opsional" class="text-slate-300 font-normal">(opsional)</span></label>
+        <div class="flex flex-col sm:flex-row gap-2 mb-2">
+          <div class="relative flex-1">
+            <i data-lucide="search" class="w-4 h-4 text-slate-400 absolute left-3 top-3"></i>
+            <input id="equip-search" type="text" autocomplete="off" placeholder="Cari nama alat / bahan…" class="w-full rounded-xl border border-slate-200 pl-9 pr-3 py-2.5 text-sm outline-none focus:border-brand-500 focus:ring-4 focus:ring-brand-500/12 placeholder:text-slate-300">
+          </div>
+        </div>
+        <div id="equip" class="max-h-64 overflow-y-auto rounded-xl border border-slate-100"><p class="text-sm text-slate-400 p-4 text-center">Memuat daftar alat & bahan…</p></div>
+        <div id="equip-cart" class="mt-3 hidden">
+          <p class="text-xs font-semibold text-slate-600 mb-2 flex items-center gap-1.5"><i data-lucide="shopping-cart" class="w-3.5 h-3.5 text-brand-600"></i>Alat Dipilih: <span id="equip-count" class="text-brand-600">0</span></p>
+          <div id="equip-selected" class="flex flex-wrap gap-2"></div>
+        </div>
       </div>
 
       <div id="hint" class="hidden text-sm rounded-xl px-3.5 py-2.5"></div>
@@ -134,7 +144,14 @@ export async function newBooking(el) {
   const labField = document.getElementById('lab-field');
   const kelasField = document.getElementById('kelas-field');
   const alatOpsional = document.getElementById('alat-opsional');
+  const equipSearchEl = document.getElementById('equip-search');
+  const equipCartEl = document.getElementById('equip-cart');
+  const equipSelectedEl = document.getElementById('equip-selected');
+  const equipCountEl = document.getElementById('equip-count');
   let mode = 'lab';
+  let allEquipment = []; // master list
+  const equipCart = new Map(); // id -> {item, qty}
+
   const setMode = (m) => {
     mode = m;
     const alat = m === 'alat';
@@ -142,69 +159,148 @@ export async function newBooking(el) {
       const on = b.dataset.mode === m;
       b.className = `mode-btn flex-1 sm:flex-none px-5 py-2.5 rounded-xl text-[13.5px] font-semibold transition-all ${on ? 'bg-white text-brand-700 shadow-soft' : 'text-slate-500 hover:text-slate-700'}`;
     });
-    labField.classList.toggle('hidden', alat);   // mode alat: tak perlu pilih lab
+    labField.classList.toggle('hidden', alat);
     form.lab_id.required = !alat;
-    kelasField.classList.toggle('hidden', alat);  // mode alat: tak perlu kelas/rombel
+    kelasField.classList.toggle('hidden', alat);
     siswaSection.classList.toggle('hidden', alat);
     document.getElementById('btn-cek').classList.toggle('hidden', alat);
     alatOpsional.textContent = alat ? '(wajib pilih ≥1)' : '(opsional)';
     alatOpsional.className = alat ? 'text-coral-500 font-normal' : 'text-slate-300 font-normal';
   };
-  form.querySelectorAll('.mode-btn').forEach((b) => b.addEventListener('click', async () => {
+
+  // Load ALL equipment once
+  const loadAllEquipment = async () => {
+    const { data: eq } = await db.equipment();
+    allEquipment = eq || [];
+    renderEquip();
+  };
+
+  form.querySelectorAll('.mode-btn').forEach((b) => b.addEventListener('click', () => {
     setMode(b.dataset.mode);
-    if (b.dataset.mode === 'alat') {
-      const { data: eq } = await db.equipment(); // semua alat dari semua lab
-      renderEquip(eq, true, 'Belum ada alat terdaftar.');
-    } else {
-      const labId = form.lab_id.value;
-      if (labId) { const { data: eq } = await db.equipmentByLab(labId); renderEquip(eq, false, 'Tidak ada alat terdaftar untuk lab ini.'); }
-      else renderEquip(null, false, 'Pilih laboratorium dulu.');
-    }
   }));
   setMode('lab');
+  loadAllEquipment();
 
-  // ---- Render daftar alat (dipakai kedua mode) ----
-  const renderEquip = (eq, showLab, placeholder) => {
-    equipEl.innerHTML = (eq && eq.length)
-      ? eq.map((e) => {
-        const k = U.stok(e);
-        const habis = k.siap <= 0;                 // semua unit rusak berat / hilang
-        const catatan = [k.rb ? `${k.rb} rusak berat` : '', k.hl ? `${k.hl} hilang` : ''].filter(Boolean).join(', ');
-        return `
-        <div class="flex items-start gap-3 text-sm border rounded-xl px-3 py-2.5 ${habis ? 'border-slate-100 bg-slate-50' : 'border-slate-200'}">
-          <label class="flex items-start gap-2.5 flex-1 min-w-0 ${habis ? 'cursor-not-allowed' : 'cursor-pointer'}">
-            <input type="checkbox" data-eqid="${e.id}" ${habis ? 'disabled' : ''} class="equip-check rounded text-brand-600 mt-0.5 shrink-0 disabled:opacity-40">
-            <span class="min-w-0">
-              <span class="block font-medium break-words leading-snug ${habis ? 'text-slate-400 line-through' : 'text-slate-700'}">${U.escapeHtml(e.nama)}</span>
-              <span class="block text-[11px] mt-0.5 ${habis ? 'text-coral-600' : 'text-slate-400'}">
-                ${showLab && e.laboratories?.nama ? U.escapeHtml(e.laboratories.nama) + ' · ' : ''}${habis
-                  ? 'Tidak ada unit siap pakai'
-                  : `siap pakai <b class="text-slate-600">${k.siap}</b> dari ${k.total}${catatan ? ` · ${catatan}` : ''}`}
-              </span>
+  // ---- Render daftar alat (unified, with search) ----
+  const renderEquip = () => {
+    const query = (equipSearchEl.value || '').trim().toLowerCase();
+    let filtered = allEquipment;
+    if (query) {
+      filtered = allEquipment.filter((e) =>
+        e.nama.toLowerCase().includes(query) ||
+        (e.laboratories?.nama || '').toLowerCase().includes(query) ||
+        (e.satuan || '').toLowerCase().includes(query)
+      );
+    }
+    // Limit display for performance
+    const MAX_SHOW = 50;
+    const shown = filtered.slice(0, MAX_SHOW);
+    const remaining = filtered.length - MAX_SHOW;
+
+    if (!allEquipment.length) {
+      equipEl.innerHTML = `<p class="text-sm text-slate-400 p-4 text-center">Belum ada alat/bahan terdaftar.</p>`;
+      return;
+    }
+    if (!shown.length) {
+      equipEl.innerHTML = `<p class="text-sm text-slate-400 p-4 text-center">Tidak ditemukan alat/bahan "${U.escapeHtml(query)}"</p>`;
+      return;
+    }
+
+    equipEl.innerHTML = shown.map((e) => {
+      const k = U.stok(e);
+      const habis = k.siap <= 0;
+      const sat = e.satuan || 'pcs';
+      const inCart = equipCart.has(e.id);
+      const catatan = [k.rb ? `${k.rb} rusak berat` : '', k.hl ? `${k.hl} hilang` : ''].filter(Boolean).join(', ');
+      return `
+      <div class="flex items-start gap-3 text-sm px-3 py-2.5 hover:bg-brand-50/40 transition-colors ${habis ? 'bg-slate-50/50' : ''} ${inCart ? 'bg-brand-50/60 border-l-2 border-brand-400' : 'border-l-2 border-transparent'}" data-eqrow="${e.id}">
+        <label class="flex items-start gap-2.5 flex-1 min-w-0 ${habis ? 'cursor-not-allowed' : 'cursor-pointer'}">
+          <input type="checkbox" data-eqid="${e.id}" ${habis ? 'disabled' : ''} ${inCart ? 'checked' : ''} class="equip-check rounded text-brand-600 mt-0.5 shrink-0 disabled:opacity-40">
+          <span class="min-w-0">
+            <span class="block font-medium break-words leading-snug ${habis ? 'text-slate-400 line-through' : 'text-slate-700'}">${U.escapeHtml(e.nama)}</span>
+            <span class="block text-[11px] mt-0.5 ${habis ? 'text-coral-600' : 'text-slate-400'}">
+              ${e.laboratories?.nama ? '<span class="text-brand-500">' + U.escapeHtml(e.laboratories.nama) + '</span> · ' : ''}${habis
+                ? 'Tidak ada unit siap pakai'
+                : `siap <b class="text-slate-600">${k.siap}</b> ${U.escapeHtml(sat)}${catatan ? ` · ${catatan}` : ''}`}
             </span>
-          </label>
-          <div class="flex items-center gap-1.5 shrink-0 ${habis ? 'hidden' : ''}">
-            <span class="text-[11px] text-slate-400 hidden sm:inline">pinjam</span>
-            <input type="number" data-qty="${e.id}" min="1" max="${k.siap}" value="1" disabled
-              class="w-14 sm:w-16 rounded-lg border border-slate-200 px-2 py-1.5 text-sm text-center outline-none focus:border-brand-500 disabled:bg-slate-50 disabled:text-slate-300">
-          </div>
-        </div>`; }).join('')
-      : `<p class="text-sm text-slate-400">${placeholder || 'Tidak ada alat.'}</p>`;
+          </span>
+        </label>
+        <div class="flex items-center gap-1.5 shrink-0 ${habis || !inCart ? 'hidden' : ''}" data-qtybox="${e.id}">
+          <button type="button" data-dec="${e.id}" class="w-7 h-7 rounded-lg border border-slate-200 grid place-items-center text-slate-500 hover:bg-slate-100 active:scale-95">−</button>
+          <input type="number" data-qty="${e.id}" min="1" max="${k.siap}" value="${inCart ? equipCart.get(e.id).qty : 1}"
+            class="w-14 rounded-lg border border-slate-200 px-2 py-1 text-sm text-center outline-none focus:border-brand-500">
+          <button type="button" data-inc="${e.id}" class="w-7 h-7 rounded-lg border border-slate-200 grid place-items-center text-slate-500 hover:bg-slate-100 active:scale-95">+</button>
+          <span class="text-[11px] text-slate-400 ml-0.5">${U.escapeHtml(sat)}</span>
+        </div>
+      </div>`;
+    }).join('') + (remaining > 0 ? `<p class="text-xs text-slate-400 text-center py-2">+ ${remaining} alat/bahan lagi, gunakan pencarian untuk menemukan.</p>` : '');
+
+    // Bind checkbox events
     equipEl.querySelectorAll('.equip-check').forEach((c) => c.addEventListener('change', () => {
-      const qty = equipEl.querySelector(`[data-qty="${c.dataset.eqid}"]`);
-      qty.disabled = !c.checked;
-      if (c.checked) qty.focus();
+      const id = c.dataset.eqid;
+      const item = allEquipment.find((e) => e.id === id);
+      if (c.checked && item) {
+        equipCart.set(id, { item, qty: 1 });
+      } else {
+        equipCart.delete(id);
+      }
+      renderEquip();
+      renderEquipCart();
+    }));
+
+    // Bind +/- buttons
+    equipEl.querySelectorAll('[data-inc]').forEach((b) => b.addEventListener('click', () => {
+      const entry = equipCart.get(b.dataset.inc);
+      if (!entry) return;
+      const max = U.stok(entry.item).siap;
+      entry.qty = Math.min(max, entry.qty + 1);
+      renderEquip(); renderEquipCart();
+    }));
+    equipEl.querySelectorAll('[data-dec]').forEach((b) => b.addEventListener('click', () => {
+      const entry = equipCart.get(b.dataset.dec);
+      if (!entry) return;
+      entry.qty = Math.max(1, entry.qty - 1);
+      renderEquip(); renderEquipCart();
+    }));
+    // Bind qty input
+    equipEl.querySelectorAll('[data-qty]').forEach((inp) => inp.addEventListener('change', () => {
+      const entry = equipCart.get(inp.dataset.qty);
+      if (!entry) return;
+      const max = U.stok(entry.item).siap;
+      entry.qty = Math.min(max, Math.max(1, Number(inp.value) || 1));
+      renderEquip(); renderEquipCart();
     }));
     U.icons();
   };
 
-  // Mode "pakai lab": alat mengikuti lab yang dipilih
+  // ---- Render selected equipment cart ----
+  const renderEquipCart = () => {
+    const count = equipCart.size;
+    equipCountEl.textContent = count;
+    equipCartEl.classList.toggle('hidden', count === 0);
+    equipSelectedEl.innerHTML = [...equipCart.entries()].map(([id, { item, qty }]) => {
+      const sat = item.satuan || 'pcs';
+      return `
+      <span class="inline-flex items-center gap-1.5 pl-2.5 pr-1.5 py-1 rounded-full bg-brand-50 text-brand-700 text-xs font-medium border border-brand-100">
+        ${U.escapeHtml(item.nama)} <span class="text-brand-400">· ${qty} ${U.escapeHtml(sat)}</span>
+        <button type="button" data-rmequip="${id}" class="w-4 h-4 rounded-full hover:bg-brand-200 grid place-items-center"><i data-lucide="x" class="w-3 h-3"></i></button>
+      </span>`;
+    }).join('');
+    equipSelectedEl.querySelectorAll('[data-rmequip]').forEach((b) => b.addEventListener('click', () => {
+      equipCart.delete(b.dataset.rmequip);
+      renderEquip();
+      renderEquipCart();
+    }));
+    U.icons();
+  };
+
+  // Equipment search with debounce
+  let eqTimer;
+  equipSearchEl.addEventListener('input', () => { clearTimeout(eqTimer); eqTimer = setTimeout(renderEquip, 200); });
+
+  // Mode "pakai lab": no longer filters equipment by lab
   form.lab_id.addEventListener('change', async () => {
-    if (mode === 'alat') return;
-    const labId = form.lab_id.value;
-    if (!labId) { renderEquip(null, false, 'Pilih laboratorium dulu.'); return; }
-    const { data: eq } = await db.equipmentByLab(labId);
-    renderEquip(eq, false, 'Tidak ada alat terdaftar untuk lab ini.');
+    // No equipment filtering needed - equipment list is always unified
   });
 
   // ---- Pencarian siswa ----
@@ -289,10 +385,9 @@ export async function newBooking(el) {
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
     const f = Object.fromEntries(new FormData(form));
-    const equipment = [...equipEl.querySelectorAll('.equip-check:checked')].map((c) => {
-      const qty = equipEl.querySelector(`[data-qty="${c.dataset.eqid}"]`);
-      return { equipment_id: c.dataset.eqid, jumlah: Math.max(1, Number(qty?.value) || 1) };
-    });
+    const equipment = [...equipCart.entries()].map(([id, { qty }]) => (
+      { equipment_id: id, jumlah: Math.max(1, qty) }
+    ));
 
     let students = [], peserta = null;
     if (mode === 'alat') {

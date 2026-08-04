@@ -148,19 +148,18 @@ function renderLanding() {
   if (S.guru) { location.hash = '#/guru/dashboard'; return; }
   app.innerHTML = authBackdrop(`
     <div class="text-center mb-9">
-      <div class="w-[68px] h-[68px] rounded-3xl bg-brand-600 grid place-items-center text-white mx-auto mb-6 shadow-glow">
-        <i data-lucide="flask-conical" class="w-8 h-8"></i>
-      </div>
-      <h1 class="text-[30px] leading-[1.15] font-semibold text-slate-900 font-display tracking-tight">
+      <img src="img/logo-smasif.png" alt="Logo SMA Progresif Bumi Shalawat" class="w-20 h-20 object-contain mx-auto mb-5 drop-shadow-lg">
+      <h1 class="text-[28px] leading-[1.15] font-semibold text-slate-900 font-display tracking-tight">
         Manajemen<br>Laboratorium
       </h1>
-      <p class="text-[14.5px] text-slate-500 mt-3">Silakan masuk sesuai peran Anda</p>
+      <p class="text-[13px] text-slate-500 mt-2">SMA Progresif Bumi Shalawat</p>
+      <p class="text-[13.5px] text-slate-400 mt-1">Silakan masuk sesuai peran Anda</p>
     </div>
     <div class="space-y-3">
       ${roleCard('#/login/guru', 'user', 'Masuk sebagai Guru', 'Cukup pilih nama, tanpa password', 'bg-brand-50 text-brand-600')}
       ${roleCard('#/login/admin', 'shield-check', 'Masuk sebagai Admin', 'Login dengan email & password', 'bg-coral-50 text-coral-600')}
     </div>
-    <p class="text-center text-[11.5px] text-slate-400 mt-10">Sistem Manajemen Laboratorium Sekolah</p>`);
+    <p class="text-center text-[11.5px] text-slate-400 mt-10">Islamic Boarding School · SMA Progresif Bumi Shalawat</p>`);
   U.icons();
 }
 
@@ -170,9 +169,7 @@ function renderAdminLogin() {
     <div class="bg-white rounded-3xl border border-slate-200 shadow-float p-7 sm:p-9">
       <a href="#/" class="inline-flex items-center gap-1.5 text-[13px] font-medium text-slate-400 hover:text-brand-600 mb-7 transition">
         <i data-lucide="arrow-left" class="w-4 h-4"></i>Kembali</a>
-      <div class="w-14 h-14 rounded-2xl bg-coral-50 text-coral-600 grid place-items-center mb-6">
-        <i data-lucide="shield-check" class="w-7 h-7"></i>
-      </div>
+      <img src="img/logo-smasif.png" alt="Logo SMASIF" class="w-14 h-14 object-contain mb-6">
       <h1 class="text-[26px] font-semibold text-slate-900 font-display tracking-tight leading-tight">Login Admin</h1>
       <p class="text-[14px] text-slate-400 mt-1.5 mb-7">Masuk untuk mengelola sistem</p>
       <form id="admin-form" class="space-y-5">
@@ -208,9 +205,7 @@ async function renderGuruLogin() {
     <div class="bg-white rounded-3xl border border-slate-200 shadow-float p-7 sm:p-9">
       <a href="#/" class="inline-flex items-center gap-1.5 text-[13px] font-medium text-slate-400 hover:text-brand-600 mb-7 transition">
         <i data-lucide="arrow-left" class="w-4 h-4"></i>Kembali</a>
-      <div class="w-14 h-14 rounded-2xl bg-brand-50 text-brand-600 grid place-items-center mb-6">
-        <i data-lucide="user" class="w-7 h-7"></i>
-      </div>
+      <img src="img/logo-smasif.png" alt="Logo SMASIF" class="w-14 h-14 object-contain mb-6">
       <h1 class="text-[26px] font-semibold text-slate-900 font-display tracking-tight leading-tight">Login Guru</h1>
       <p class="text-[14px] text-slate-400 mt-1.5 mb-6">Ketik lalu pilih nama Anda</p>
       <div class="relative">

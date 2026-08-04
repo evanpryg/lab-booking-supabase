@@ -85,7 +85,7 @@ export const db = {
   bookings: (filter = {}) => {
     let q = supabase
       .from('bookings')
-      .select('*, laboratories(nama,kode), gurus(nama), booking_equipment(jumlah, equipment(nama))')
+      .select('*, laboratories(nama,kode), gurus(nama), booking_equipment(jumlah, equipment(nama,satuan))')
       .order('tanggal', { ascending: false })
       .order('jam_mulai');
     if (filter.status) q = q.eq('status', filter.status);
@@ -103,7 +103,7 @@ export const db = {
   getSetting: (key) => supabase.from('settings').select('value').eq('key', key).maybeSingle(),
   setSetting: (key, value) => supabase.from('settings').upsert({ key, value }, { onConflict: 'key' }),
   bookingEquipment: (bookingId) =>
-    supabase.from('booking_equipment').select('*, equipment(nama)').eq('booking_id', bookingId),
+    supabase.from('booking_equipment').select('*, equipment(nama,satuan)').eq('booking_id', bookingId),
   approvedForCalendar: () =>
     supabase.from('bookings').select('*, laboratories(nama,kode), gurus(nama)')
       .in('status', ['disetujui', 'selesai']),

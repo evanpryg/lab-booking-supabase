@@ -10,6 +10,21 @@ const Swal = window.Swal;
 const XLSX = window.XLSX;
 const reload = (fn) => fn(document.getElementById('view'));
 
+// ---- Excel Export Helper ---------------------------------------------------
+function exportToExcel(sheets, filename) {
+  const wb = XLSX.utils.book_new();
+  sheets.forEach(({ name, data }) => {
+    const ws = XLSX.utils.json_to_sheet(data);
+    // Auto-width columns
+    const colWidths = data.length ? Object.keys(data[0]).map((k) => ({
+      wch: Math.max(k.length, ...data.map((r) => String(r[k] || '').length)).toString().length > 40 ? 40 : Math.max(k.length + 2, ...data.map((r) => String(r[k] || '').length) + 2)
+    })) : [];
+    ws['!cols'] = colWidths;
+    XLSX.utils.book_append_sheet(wb, ws, name.slice(0, 31));
+  });
+  XLSX.writeFile(wb, filename);
+}
+
 // ---- Dashboard -------------------------------------------------------------
 export async function dashboard(el) {
   const [{ data: bk }, { data: labs }] = await Promise.all([db.bookings(), db.labsStatus()]);
@@ -74,12 +89,56 @@ export async function bookings(el, status = '', month) {
       <div class="flex items-center gap-2 shrink-0">
         <input type="month" id="month" value="${month}" class="rounded-xl border border-slate-200 bg-white px-3.5 py-2 text-[13px] font-medium text-slate-700 outline-none focus:border-brand-500 focus:ring-4 focus:ring-brand-500/12">
         <button id="allmonth" class="px-3.5 py-2 rounded-xl text-[13px] font-semibold whitespace-nowrap border transition-all ${month ? 'bg-white border-slate-200 text-slate-500 hover:bg-brand-50 hover:text-brand-700 hover:border-brand-200' : 'bg-brand-600 border-brand-600 text-white shadow-glow'}">Semua bulan</button>
+        <button id="export-booking" class="px-3.5 py-2 rounded-xl text-[13px] font-semibold whitespace-nowrap border border-emerald-200 bg-emerald-50 text-emerald-700 hover:bg-emerald-100 transition-all flex items-center gap-1.5"><i data-lucide="file-spreadsheet" class="w-4 h-4"></i>Ekspor Excel</button>
       </div>
     </div>
     <div id="list"></div>`;
   el.querySelectorAll('.filter').forEach((b) => b.addEventListener('click', () => bookings(el, b.dataset.f, month)));
   el.querySelector('#month').addEventListener('change', (e) => bookings(el, status, e.target.value));
   el.querySelector('#allmonth').addEventListener('click', () => bookings(el, status, month ? '' : U.todayISO().slice(0, 7)));
+  el.querySelector('#export-booking').addEventListener('click', async () => {
+    Swal.fire({ title: 'Menyiapkan laporan…', didOpen: () => Swal.showLoading(), allowOutsideClick: false });
+    const allFilter = {};
+    if (status) allFilter.status = status;
+    if (month) allFilter.month = month;
+    const { data: allData } = await db.bookings(allFilter);
+    const rows = (allData || []);
+
+    // Sheet 1: Laporan Peminjaman Lab
+    const labRows = rows.filter((b) => b.tipe !== 'alat').map((b) => ({
+      'Tanggal': b.tanggal, 'Jam Mulai': b.jam_mulai?.slice(0,5), 'Jam Selesai': b.jam_selesai?.slice(0,5),
+      'Laboratorium': b.laboratories?.nama || '-', 'Guru': b.gurus?.nama || '-',
+      'Kelas': b.kelas || '-', 'Keperluan': b.keperluan || '-',
+      'Jumlah Peserta': b.jumlah_peserta || 0, 'Status': b.status,
+      'Alasan Penolakan': b.alasan_penolakan || '',
+    }));
+
+    // Sheet 2: Laporan Peminjaman Alat & Bahan
+    const alatRows = [];
+    rows.forEach((b) => {
+      (b.booking_equipment || []).forEach((be) => {
+        alatRows.push({
+          'Tanggal': b.tanggal, 'Jam Mulai': b.jam_mulai?.slice(0,5), 'Jam Selesai': b.jam_selesai?.slice(0,5),
+          'Guru': b.gurus?.nama || '-', 'Keperluan': b.keperluan || '-',
+          'Nama Alat/Bahan': be.equipment?.nama || '-',
+          'Jumlah Pinjam': be.jumlah || 0,
+          'Satuan': be.equipment?.satuan || 'pcs',
+          'Status Booking': b.status,
+          'Laboratorium': b.laboratories?.nama || (b.tipe === 'alat' ? 'Pinjam Alat' : '-'),
+        });
+      });
+    });
+
+    const sheets = [];
+    if (labRows.length) sheets.push({ name: 'Peminjaman Lab', data: labRows });
+    if (alatRows.length) sheets.push({ name: 'Peminjaman Alat Bahan', data: alatRows });
+    if (!sheets.length) { Swal.close(); return U.toast('info', 'Tidak ada data untuk diekspor.'); }
+
+    const periode = month || 'semua';
+    exportToExcel(sheets, `Laporan_Booking_${periode}.xlsx`);
+    Swal.close();
+    U.toast('success', 'Laporan berhasil diunduh!');
+  });
   paintAdminBookings(document.getElementById('list'), data || [], () => bookings(el, status, month));
   U.icons();
 }
@@ -283,6 +342,7 @@ export async function equipment(el) {
     <div class="flex items-center justify-between gap-2 mb-4">
       <h2 class="font-semibold text-slate-900 font-display text-[17px]">Daftar Alat</h2>
       <div class="flex gap-2">
+        <button id="export-equip" class="text-sm bg-emerald-50 border border-emerald-200 text-emerald-700 hover:bg-emerald-100 px-3.5 py-2 rounded-xl flex items-center gap-1.5"><i data-lucide="file-spreadsheet" class="w-4 h-4"></i><span class="hidden sm:inline">Ekspor Excel</span></button>
         <button id="import" class="text-sm bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 px-3.5 py-2 rounded-xl flex items-center gap-1.5"><i data-lucide="upload" class="w-4 h-4"></i><span class="hidden sm:inline">Import Excel/CSV</span></button>
         <button id="add" class="text-sm bg-brand-600 hover:bg-brand-700 shadow-glow active:scale-95 text-white px-3.5 py-2 rounded-xl flex items-center gap-1.5"><i data-lucide="plus" class="w-4 h-4"></i>Tambah</button>
       </div>
@@ -290,12 +350,13 @@ export async function equipment(el) {
     ${!eq?.length ? U.emptyState('Belum ada alat') : U.card(`
       <div class="overflow-x-auto"><table class="w-full text-sm min-w-[720px]">
         <thead class="text-left text-slate-400 border-b border-slate-200">
-          <tr><th class="p-4 font-medium">Nama</th><th class="p-4 font-medium">Lab</th><th class="p-4 font-medium">Total</th><th class="p-4 font-medium">Siap Pakai</th><th class="p-4 font-medium">Rincian Kondisi</th><th class="p-4"></th></tr>
+          <tr><th class="p-4 font-medium">Nama</th><th class="p-4 font-medium">Lab</th><th class="p-4 font-medium">Satuan</th><th class="p-4 font-medium">Total</th><th class="p-4 font-medium">Siap Pakai</th><th class="p-4 font-medium">Rincian Kondisi</th><th class="p-4"></th></tr>
         </thead>
         <tbody>${eq.map((e) => `
           <tr class="border-b border-slate-100 last:border-0">
             <td class="p-4 font-medium text-slate-700">${U.escapeHtml(e.nama)}</td>
             <td class="p-4 text-slate-500">${U.escapeHtml(e.laboratories?.nama || '-')}</td>
+            <td class="p-4 text-slate-500"><span class="px-2 py-0.5 rounded-full bg-slate-100 text-[11px] font-semibold text-slate-600">${U.escapeHtml(e.satuan || 'pcs')}</span></td>
             <td class="p-4 text-slate-500">${U.stok(e).total}</td>
             <td class="p-4 font-semibold ${U.stok(e).siap > 0 ? 'text-emerald-600' : 'text-coral-700'}">${U.stok(e).siap}</td>
             <td class="p-4">${U.stokBadges(e)}</td>
@@ -310,6 +371,20 @@ export async function equipment(el) {
 
   el.querySelector('#add').addEventListener('click', () => equipForm(null, labs));
   el.querySelector('#import').addEventListener('click', () => importEquipment(labs));
+  el.querySelector('#export-equip').addEventListener('click', () => {
+    if (!eq?.length) return U.toast('info', 'Tidak ada data alat.');
+    const data = eq.map((e) => {
+      const s = U.stok(e);
+      return {
+        'Nama Alat/Bahan': e.nama, 'Kode': e.kode || '-',
+        'Laboratorium': e.laboratories?.nama || '-', 'Satuan': e.satuan || 'pcs',
+        'Jumlah Total': s.total, 'Kondisi Baik': s.baik, 'Siap Pakai': s.siap,
+        'Rusak Ringan': s.rr, 'Rusak Berat': s.rb, 'Hilang': s.hl,
+      };
+    });
+    exportToExcel([{ name: 'Inventaris Alat Bahan', data }], `Inventaris_Alat_${U.todayISO()}.xlsx`);
+    U.toast('success', 'Laporan inventaris berhasil diunduh!');
+  });
   el.querySelectorAll('[data-hist]').forEach((b) => b.addEventListener('click', () => equipHistory(eq.find((x) => x.id === b.dataset.hist))));
   el.querySelectorAll('[data-edit]').forEach((b) => b.addEventListener('click', () => equipForm(eq.find((x) => x.id === b.dataset.edit), labs)));
   el.querySelectorAll('[data-del]').forEach((b) => b.addEventListener('click', () => del('Alat', () => db.deleteEquipment(b.dataset.del), equipment)));
@@ -321,6 +396,7 @@ async function equipForm(item, labs) {
     html: `
       <input id="s-nama" class="swal2-input" placeholder="Nama alat" value="${U.escapeHtml(item?.nama || '')}">
       <select id="s-lab" class="swal2-select">${labs.map((l) => `<option value="${l.id}" ${item?.lab_id === l.id ? 'selected' : ''}>${U.escapeHtml(l.nama)}</option>`).join('')}</select>
+      <select id="s-satuan" class="swal2-select">${['pcs','liter','ml','kg','gram','pack','botol','roll','set','lembar','buah','batang','pasang','unit','box','lusin','rim','dus'].map((s) => `<option value="${s}" ${(item?.satuan || 'pcs') === s ? 'selected' : ''}>${s}</option>`).join('')}</select>
       <input id="s-jml" type="number" min="1" class="swal2-input" placeholder="Jumlah total unit" value="${item?.jumlah ?? 1}">
       <div style="display:flex;gap:8px;margin:0 1em">
         <label style="flex:1;text-align:left;font-size:12px;color:#64748b">Rusak Ringan
@@ -350,6 +426,7 @@ async function equipForm(item, labs) {
       }
       return {
         nama, lab_id: document.getElementById('s-lab').value,
+        satuan: document.getElementById('s-satuan').value,
         jumlah, rusak_ringan: rr, rusak_berat: rb, hilang: hl,
         _catatan: document.getElementById('s-catatan').value.trim() || null,
       };
@@ -623,9 +700,10 @@ function importEquipment(labs) {
       }
       // Jaga agar tidak melebihi total
       if (rr + rb + hl > jumlah) { rr = Math.min(rr, jumlah); rb = Math.min(rb, jumlah - rr); hl = Math.min(hl, jumlah - rr - rb); }
+      const satuan = String(r.satuan || r.unit || 'pcs').trim().toLowerCase() || 'pcs';
       return {
         nama: String(r.nama || '').trim(), lab_id: byKode[key] || byNama[key] || null,
-        jumlah, rusak_ringan: rr, rusak_berat: rb, hilang: hl,
+        satuan, jumlah, rusak_ringan: rr, rusak_berat: rb, hilang: hl,
       };
     }).filter((r) => r.nama && r.lab_id);
     if (!rows.length) return U.alertError('Tidak ada baris valid. Wajib kolom "nama" dan "lab_kode" (kode lab yang cocok).');
