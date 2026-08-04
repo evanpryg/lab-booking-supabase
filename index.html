@@ -239,6 +239,19 @@
     .swal2-input:focus, .swal2-textarea:focus, .swal2-select:focus {
       border-color: #0F766E !important; box-shadow: 0 0 0 4px rgba(15,118,110,.13) !important; background: #fff !important;
     }
+    /* Pilihan radio (mis. pilih jenis laporan) tampil sebagai kartu bertumpuk */
+    .swal2-radio {
+      flex-direction: column; align-items: stretch; gap: .5rem;
+      background: transparent !important; margin: 1.2em 0 .4em !important;
+    }
+    .swal2-radio label {
+      display: flex !important; align-items: flex-start; gap: .7rem; margin: 0 !important;
+      padding: .75rem .9rem; border: 1px solid #EAE6E0; border-radius: 14px; background: #FDFCFB;
+      cursor: pointer; transition: border-color .18s, background .18s;
+    }
+    .swal2-radio label:hover { border-color: #74CEB8; background: #fff; }
+    .swal2-radio label:has(input:checked) { border-color: #0F766E; background: #F3FAF8; }
+    .swal2-radio input { margin: .2rem 0 0 !important; flex-shrink: 0; }
     .swal2-validation-message { border-radius: 12px !important; background: #FFF4F0 !important; color: #B94227 !important; }
     .swal2-icon { border-width: 3px !important; }
     .swal2-toast { border-radius: 16px !important; box-shadow: 0 12px 32px -12px rgba(64,54,44,.35) !important; }

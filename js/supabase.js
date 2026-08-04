@@ -30,6 +30,7 @@ export const db = {
   createGuru: (row) => supabase.from('gurus').insert(row).select().single(),
   updateGuru: (id, row) => supabase.from('gurus').update(row).eq('id', id).select().single(),
   deleteGuru: (id) => supabase.from('gurus').delete().eq('id', id),
+  bulkInsertGurus: (rows) => supabase.from('gurus').insert(rows),
 
   // Laboratories
   labs: () => supabase.from('laboratories').select('*').order('nama'),

@@ -1,5 +1,6 @@
-nama,lab_kode,jumlah,rusak_ringan,rusak_berat,hilang
-PC Desktop,LK1,30,2,1,0
-Proyektor,LK1,1,0,0,0
-Mikroskop,LIPA,15,0,0,1
-Headset,LBHS,30,3,0,0
+nama,lab_kode,satuan,jumlah,rusak_ringan,rusak_berat,hilang
+PC Desktop,LK1,unit,30,2,1,0
+Proyektor,LK1,unit,1,0,0,0
+Mikroskop,LIPA,unit,15,0,0,1
+Alkohol 70%,LIPA,botol,12,0,0,0
+Headset,LBHS,pcs,30,3,0,0
