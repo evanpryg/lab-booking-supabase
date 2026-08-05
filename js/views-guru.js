@@ -109,7 +109,7 @@ export async function newBooking(el) {
             <input id="equip-search" type="text" autocomplete="off" placeholder="Cari nama alat / bahan…" class="w-full rounded-xl border border-slate-200 pl-9 pr-3 py-2.5 text-sm outline-none focus:border-brand-500 focus:ring-4 focus:ring-brand-500/12 placeholder:text-slate-300">
           </div>
         </div>
-        <div id="equip" class="max-h-64 overflow-y-auto rounded-xl border border-slate-100"><p class="text-sm text-slate-400 p-4 text-center">Memuat daftar alat & bahan…</p></div>
+        <div id="equip" class="max-h-[420px] overflow-y-auto rounded-xl border border-slate-200/80 bg-slate-50/30 p-2.5"><p class="text-sm text-slate-400 p-4 text-center">Memuat daftar alat & bahan…</p></div>
         <div id="equip-cart" class="mt-3 hidden">
           <p class="text-xs font-semibold text-slate-600 mb-2 flex items-center gap-1.5"><i data-lucide="shopping-cart" class="w-3.5 h-3.5 text-brand-600"></i>Alat Dipilih: <span id="equip-count" class="text-brand-600">0</span></p>
           <div id="equip-selected" class="flex flex-wrap gap-2"></div>
@@ -192,8 +192,8 @@ export async function newBooking(el) {
         (e.satuan || '').toLowerCase().includes(query)
       );
     }
-    // Limit display for performance
-    const MAX_SHOW = 50;
+    // Limit display for performance: with multi-column layout, show up to 90 items
+    const MAX_SHOW = 90;
     const shown = filtered.slice(0, MAX_SHOW);
     const remaining = filtered.length - MAX_SHOW;
 
@@ -206,34 +206,53 @@ export async function newBooking(el) {
       return;
     }
 
-    equipEl.innerHTML = shown.map((e) => {
+    const cardsHtml = shown.map((e) => {
       const k = U.stok(e);
       const habis = k.siap <= 0;
       const sat = e.satuan || 'pcs';
       const inCart = equipCart.has(e.id);
-      const catatan = [k.rb ? `${k.rb} rusak berat` : '', k.hl ? `${k.hl} hilang` : ''].filter(Boolean).join(', ');
+      const catatan = [k.rb ? `${k.rb} RB` : '', k.hl ? `${k.hl} hilang` : ''].filter(Boolean).join(', ');
       return `
-      <div class="flex items-start gap-3 text-sm px-3 py-2.5 hover:bg-brand-50/40 transition-colors ${habis ? 'bg-slate-50/50' : ''} ${inCart ? 'bg-brand-50/60 border-l-2 border-brand-400' : 'border-l-2 border-transparent'}" data-eqrow="${e.id}">
-        <label class="flex items-start gap-2.5 flex-1 min-w-0 ${habis ? 'cursor-not-allowed' : 'cursor-pointer'}">
-          <input type="checkbox" data-eqid="${e.id}" ${habis ? 'disabled' : ''} ${inCart ? 'checked' : ''} class="equip-check rounded text-brand-600 mt-0.5 shrink-0 disabled:opacity-40">
-          <span class="min-w-0">
-            <span class="block font-medium break-words leading-snug ${habis ? 'text-slate-400 line-through' : 'text-slate-700'}">${U.escapeHtml(e.nama)}</span>
-            <span class="block text-[11px] mt-0.5 ${habis ? 'text-coral-600' : 'text-slate-400'}">
-              ${e.laboratories?.nama ? '<span class="text-brand-500">' + U.escapeHtml(e.laboratories.nama) + '</span> · ' : ''}${habis
-                ? 'Tidak ada unit siap pakai'
-                : `siap <b class="text-slate-600">${k.siap}</b> ${U.escapeHtml(sat)}${catatan ? ` · ${catatan}` : ''}`}
+      <div class="flex flex-col justify-between gap-2 p-2.5 rounded-xl border text-sm transition-all ${
+        habis
+          ? 'bg-slate-100/60 border-slate-200/60 opacity-60'
+          : inCart
+          ? 'bg-brand-50/70 border-brand-300 ring-1 ring-brand-400/30 shadow-xs'
+          : 'bg-white border-slate-200/70 hover:border-brand-200 hover:bg-slate-50/80 shadow-2xs'
+      }" data-eqrow="${e.id}">
+        <label class="flex items-start gap-2.5 ${habis ? 'cursor-not-allowed' : 'cursor-pointer'} select-none min-w-0 flex-1">
+          <input type="checkbox" data-eqid="${e.id}" ${habis ? 'disabled' : ''} ${inCart ? 'checked' : ''} class="equip-check rounded text-brand-600 mt-0.5 shrink-0 disabled:opacity-40 focus:ring-brand-500">
+          <span class="min-w-0 flex-1">
+            <span class="block font-semibold text-[13px] leading-tight break-words ${habis ? 'text-slate-400 line-through' : 'text-slate-800'}">${U.escapeHtml(e.nama)}</span>
+            <span class="block text-[11px] mt-1 ${habis ? 'text-coral-600 font-medium' : 'text-slate-400'}">
+              ${e.laboratories?.nama ? '<span class="text-brand-600 font-medium">' + U.escapeHtml(e.laboratories.nama) + '</span> · ' : ''}${
+                habis
+                  ? 'Unit habis'
+                  : `siap <b class="text-slate-700 font-semibold">${k.siap}</b> ${U.escapeHtml(sat)}${catatan ? ` · ${catatan}` : ''}`
+              }
             </span>
           </span>
         </label>
-        <div class="flex items-center gap-1.5 shrink-0 ${habis || !inCart ? 'hidden' : ''}" data-qtybox="${e.id}">
-          <button type="button" data-dec="${e.id}" class="w-7 h-7 rounded-lg border border-slate-200 grid place-items-center text-slate-500 hover:bg-slate-100 active:scale-95">−</button>
-          <input type="number" data-qty="${e.id}" min="1" max="${k.siap}" value="${inCart ? equipCart.get(e.id).qty : 1}"
-            class="w-14 rounded-lg border border-slate-200 px-2 py-1 text-sm text-center outline-none focus:border-brand-500">
-          <button type="button" data-inc="${e.id}" class="w-7 h-7 rounded-lg border border-slate-200 grid place-items-center text-slate-500 hover:bg-slate-100 active:scale-95">+</button>
-          <span class="text-[11px] text-slate-400 ml-0.5">${U.escapeHtml(sat)}</span>
+
+        <div class="flex items-center justify-between pt-2 border-t border-brand-200/40 shrink-0 ${habis || !inCart ? 'hidden' : ''}" data-qtybox="${e.id}">
+          <span class="text-[11px] font-semibold text-brand-700">Jumlah:</span>
+          <div class="flex items-center gap-1">
+            <button type="button" data-dec="${e.id}" class="w-6 h-6 rounded-md border border-slate-200 bg-white grid place-items-center text-slate-600 hover:bg-slate-100 active:scale-95 text-xs font-bold shadow-2xs">−</button>
+            <input type="number" data-qty="${e.id}" min="1" max="${k.siap}" value="${inCart ? equipCart.get(e.id).qty : 1}"
+              class="w-12 rounded-md border border-slate-200 bg-white px-1 py-0.5 text-xs text-center font-medium outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-500/20">
+            <button type="button" data-inc="${e.id}" class="w-6 h-6 rounded-md border border-slate-200 bg-white grid place-items-center text-slate-600 hover:bg-slate-100 active:scale-95 text-xs font-bold shadow-2xs">+</button>
+            <span class="text-[11px] text-slate-500 ml-0.5 font-medium">${U.escapeHtml(sat)}</span>
+          </div>
         </div>
       </div>`;
-    }).join('') + (remaining > 0 ? `<p class="text-xs text-slate-400 text-center py-2">+ ${remaining} alat/bahan lagi, gunakan pencarian untuk menemukan.</p>` : '');
+    }).join('');
+
+    equipEl.innerHTML = `
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5">
+        ${cardsHtml}
+      </div>
+      ${remaining > 0 ? `<p class="text-xs text-slate-400 text-center py-2.5 mt-1">+ ${remaining} alat/bahan lagi, gunakan pencarian untuk menemukan.</p>` : ''}
+    `;
 
     // Bind checkbox events
     equipEl.querySelectorAll('.equip-check').forEach((c) => c.addEventListener('change', () => {
